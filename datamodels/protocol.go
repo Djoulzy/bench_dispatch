@@ -39,8 +39,8 @@ const (
 type RideFlowType int
 
 const (
-	defaut RideFlowType = 0
-	leTaxi RideFlowType = 1
+	defaut RideFlowType = iota
+	leTaxi
 )
 
 // Coordinates : geolocalisation
@@ -66,6 +66,19 @@ type OptionsRide struct {
 type AcceptRide struct {
 	RideID string `json:"rideId"`
 }
+
+// RideState : Status d'une course
+type RideState int
+
+const (
+	started RideState = iota
+	approach
+	pickUpPassenger
+	ended
+	cancelled
+	booked
+	pending
+)
 
 /*
 {

@@ -57,6 +57,10 @@ func (h *Hub) Register(conn net.Conn, id int) *Driver {
 	}
 	h.mu.Unlock()
 
+	h.pool.Schedule(func() {
+		driver.Life()
+	})
+
 	return driver
 }
 

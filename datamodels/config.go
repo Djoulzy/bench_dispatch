@@ -12,7 +12,8 @@ type Globals struct {
 
 // Bench : Parametre des tests
 type Bench struct {
-	NbClients int
+	NbClients       int
+	SendPosInterval int
 }
 
 // WSserver : Configuration des servers

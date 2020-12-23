@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
-	"math/rand"
 	"sync"
+	"time"
 
 	"bench_dispatch/datamodels"
 	"bench_dispatch/tools/clog"
@@ -110,7 +111,7 @@ func (d *Driver) writeRaw(p []byte) error {
 }
 
 func (d *Driver) write(x interface{}) error {
-	w := wsutil.NewWriter(d.conn, ws.StateServerSide, ws.OpText)
+	w := wsutil.NewWriter(d.conn, ws.StateClientSide, ws.OpText)
 	encoder := json.NewEncoder(w)
 
 	d.io.Lock()
@@ -123,8 +124,31 @@ func (d *Driver) write(x interface{}) error {
 	return w.Flush()
 }
 
+func (d *Driver) sendCoord() {
+	req := datamodels.Request{
+		ID:     d.id,
+		Method: "UpdateDriverLocation",
+		Params: datamodels.Coordinates{
+			Latitude:  d.coord.Latitude,
+			Longitude: d.coord.Longitude,
+		},
+	}
 
+	d.write(req)
+}
 
+// Life : Simulation des actions d'un Driver
 func (d *Driver) Life() {
+	posTimer, _ := time.ParseDuration(fmt.Sprintf("%ds", conf.Bench.SendPosInterval))
+	ticker := time.NewTicker(posTimer)
+	defer func() {
+		ticker.Stop()
+	}()
 
+	for {
+		select {
+		case <-ticker.C:
+			d.sendCoord()
+		}
+	}
 }

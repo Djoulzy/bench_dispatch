@@ -24,7 +24,7 @@ var (
 	conf      = &datamodels.ConfigData{}
 	pool      *gopool.Pool
 	hub       *Hub
-	address    []datamodels.AddressRide
+	address   []datamodels.AddressRide
 	nbAdress  int
 )
 
@@ -85,6 +85,7 @@ func loadCSV() int {
 		address = append(address, tmp)
 		count++
 	}
+	clog.Trace("main", "Address CSV", "Loaded %d address ...", count)
 	return count
 }
 
@@ -94,6 +95,8 @@ func main() {
 
 	clog.LogLevel = 5
 	clog.StartLogging = true
+
+	nbAdress = loadCSV()
 
 	pool = gopool.NewPool(conf.Workers, conf.QueueSize, 10)
 	hub = NewHub(pool)
@@ -130,8 +133,6 @@ func main() {
 			})
 		})
 	}
-
-	nbAdress = loadCSV()
 
 	<-exit
 }
