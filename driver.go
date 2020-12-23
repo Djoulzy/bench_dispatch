@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io"
+	"math/rand"
 	"sync"
 
 	"bench_dispatch/datamodels"
@@ -120,4 +121,10 @@ func (d *Driver) write(x interface{}) error {
 	}
 
 	return w.Flush()
+}
+
+
+
+func (d *Driver) Life() {
+
 }

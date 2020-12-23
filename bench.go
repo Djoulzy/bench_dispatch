@@ -24,7 +24,8 @@ var (
 	conf      = &datamodels.ConfigData{}
 	pool      *gopool.Pool
 	hub       *Hub
-	adress    []datamodels.AddressRide
+	address    []datamodels.AddressRide
+	nbAdress  int
 )
 
 // Deadliner : Wrapper de connection pour ajouter un timer avant chaque lecture / ecriture
@@ -56,7 +57,8 @@ func connect(i int, u url.URL) net.Conn {
 	return conn
 }
 
-func loadCSV() {
+func loadCSV() int {
+	count := -2
 	csvfile, err := os.Open("Marseille.csv")
 	if err != nil {
 		clog.Fatal("main", "CSV", err)
@@ -80,8 +82,10 @@ func loadCSV() {
 		long, _ := strconv.ParseFloat(record[1], 64)
 		lat, _ := strconv.ParseFloat(record[2], 64)
 		tmp := datamodels.AddressRide{Address: record[0], Coord: datamodels.Coordinates{Longitude: long, Latitude: lat}}
-		adress = append(adress, tmp)
+		address = append(address, tmp)
+		count++
 	}
+	return count
 }
 
 func main() {
@@ -127,7 +131,7 @@ func main() {
 		})
 	}
 
-	loadCSV()
+	nbAdress = loadCSV()
 
 	<-exit
 }
