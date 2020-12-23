@@ -45,9 +45,10 @@ func (h *Hub) getNewAdress() datamodels.AddressRide {
 func (h *Hub) Register(conn net.Conn, id int) *Driver {
 	loc := h.getNewAdress()
 	driver := &Driver{
-		hub:   h,
-		conn:  conn,
-		coord: loc.Coord,
+		hub:         h,
+		conn:        conn,
+		driverState: idle,
+		coord:       loc.Coord,
 	}
 
 	h.mu.Lock()

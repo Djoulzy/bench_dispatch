@@ -134,5 +134,7 @@ func main() {
 		})
 	}
 
+	go output()
+
 	<-exit
 }

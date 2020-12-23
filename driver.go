@@ -14,15 +14,26 @@ import (
 	"github.com/gobwas/ws/wsutil"
 )
 
+
+// UserState : Etat d'un Driver
+type UserState int
+
+const (
+	idle UserState = iota
+	ready
+	onRide
+	err
+)
+
 // Driver : Représente une connexion avec une voiture / taxi
 // Cett structure contient tous les infos de communication
 type Driver struct {
-	io       sync.Mutex
-	conn     io.ReadWriteCloser
-	hub      *Hub
-	id       int
-	userType int
-	coord    datamodels.Coordinates
+	io          sync.Mutex
+	conn        io.ReadWriteCloser
+	hub         *Hub
+	id          int
+	driverState UserState
+	coord       datamodels.Coordinates
 }
 
 ////////////////
