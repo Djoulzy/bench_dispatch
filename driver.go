@@ -152,6 +152,34 @@ func dice(nb int) int {
 	return rand.Intn(nb) + 1
 }
 
+func (d *Driver) createCourse() {
+	now := time.Now()
+
+	ride := datamodels.Ride{
+		Origin:      datamodels.Defaut,
+		ID:          fmt.Sprintf("%d", dice(1000)),
+		Date:        now.Format(time.RFC3339),
+		ValidUntil:  now.Format(time.RFC3339),
+		State:       datamodels.Pending,
+		IsImmediate: true,
+		FromAddress: getNewAdress(),
+		ToAddress:   getNewAdress(),
+		Options: datamodels.OptionsRide{
+			Luggages:   0,
+			Passengers: 1,
+			Vehicle:    datamodels.Other,
+		},
+	}
+
+	req := datamodels.Request{
+		ID:     d.id,
+		Method: "NewRide",
+		Params: ride,
+	}
+
+	d.write(req)
+}
+
 // Life : Simulation des actions d'un Driver
 func (d *Driver) Life() {
 	baseTimer, _ := time.ParseDuration(fmt.Sprintf("%ds", conf.Bench.BaseTimer))
@@ -174,10 +202,11 @@ func (d *Driver) Life() {
 					idleCount--
 				}
 			case ready:
-				if dice(100) > 80 {
+				if dice(100) > 95 {
 					d.driverState = idle
 					idleCount = conf.Bench.IdleDuration
 					sendPosCount = 0
+					d.createCourse()
 				}
 			}
 

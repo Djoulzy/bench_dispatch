@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bench_dispatch/tools/clog"
 	"fmt"
 	"os"
 	"time"
@@ -11,11 +12,21 @@ import (
 
 func output() {
 	err := termbox.Init()
+	termbox.HideCursor()
 
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	go func() { 
+		switch ev := termbox.PollEvent(); ev.Type {
+		case termbox.EventKey:
+			if ev.Ch == 'q' {
+				os.Exit(0)
+			}
+		}
+	}()
 
 	for {
 		displayHub()
@@ -44,14 +55,11 @@ func displayHub() {
 			tbprintf(4, i, termbox.ColorRed, termbox.ColorDefault, "E")
 		}
 		tbprintf(6, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
-		tbprintf(30, i, termbox.ColorDefault, termbox.ColorDefault, "%d", dice(100))
 	}
-	termbox.Flush()
-	switch ev := termbox.PollEvent(); ev.Type {
-	case termbox.EventKey:
-		if ev.Ch == 'q' {
-			os.Exit(0)
-		}
+
+	err := termbox.Flush()
+	if err != nil {
+		clog.Fatal("display", "flush", err)
 	}
 }
 

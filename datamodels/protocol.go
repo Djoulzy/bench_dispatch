@@ -39,59 +39,61 @@ const (
 // RideFlowType : Provenace de la demande
 type RideFlowType int
 
+// Origine de la demande
 const (
-	defaut RideFlowType = iota
-	leTaxi
+	Defaut RideFlowType = iota
+	LeTaxi
 )
 
 // Coordinates : geolocalisation
 type Coordinates struct {
-	Longitude float64 `json:"longitude"`
-	Latitude  float64 `json:"latitude"`
+	Longitude float64 `mapstructure:"longitude" json:"longitude"`
+	Latitude  float64 `mapstructure:"latitude" json:"latitude"`
 }
 
-// AddressRide : adresse de prise en charge
-type AddressRide struct {
-	Address string      `json:"address"`
-	Coord   Coordinates `json:"coordinates"`
+// Address : adresse de prise en charge
+type Address struct {
+	Name  string      `mapstructure:"address" json:"address"`
+	Coord Coordinates `mapstructure:"coordinates" json:"coordinates"`
 }
 
 // OptionsRide : Options à ajouter à la course
 type OptionsRide struct {
-	Luggages   int         `json:"numberOfLuggages"`
-	Passengers int         `json:"numberOfPassengers"`
-	Vehicle    VehicleType `json:"vehicleType"`
+	Luggages   int         `mapstructure:"numberOfLuggages" json:"numberOfLuggages"`
+	Passengers int         `mapstructure:"numberOfPassengers" json:"numberOfPassengers"`
+	Vehicle    VehicleType `mapstructure:"vehicleType" json:"vehicleType"`
 }
 
 // AcceptRide : Message du chauffeur pour accepter la course
 type AcceptRide struct {
-	RideID string `json:"rideId"`
+	RideID string `mapstructure:"rideId" json:"rideId"`
 }
 
 // RideState : Status d'une course
 type RideState int
 
+// Etats des course
 const (
-	started RideState = iota
-	approach
-	pickUpPassenger
-	ended
-	cancelled
-	booked
-	pending
+	Started RideState = iota
+	Approach
+	PickUpPassenger
+	Ended
+	Cancelled
+	Booked
+	Pending
 )
 
 // Ride : modele de donnée pour une course
 type Ride struct {
-	Origin      RideFlowType `json:"origin"`
-	ID          string       `json:"id"`
-	Date        string       `json:"date"`
-	State       RideState    `json:"state"`
-	ToAddress   AddressRide  `json:"toAddress"`
-	ValidUntil  string       `json:"validUntil"`
-	IsImmediate bool         `json:"isImmediate"`
-	FromAddress AddressRide  `json:"fromAddress"`
-	Options     OptionsRide  `json:"options"`
+	Origin      RideFlowType `mapstructure:"origin" json:"origin"`
+	ID          string       `mapstructure:"id" json:"id"`
+	Date        string       `mapstructure:"date" json:"date"`
+	State       RideState    `mapstructure:"state" json:"state"`
+	ToAddress   Address      `mapstructure:"toAddress" json:"toAddress"`
+	ValidUntil  string       `mapstructure:"validUntil" json:"validUntil"`
+	IsImmediate bool         `mapstructure:"isImmediate" json:"isImmediate"`
+	FromAddress Address      `mapstructure:"fromAddress" json:"fromAddress"`
+	Options     OptionsRide  `mapstructure:"options" json:"options"`
 }
 
 /*

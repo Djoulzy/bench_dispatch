@@ -1,11 +1,9 @@
 package main
 
 import (
-	"math/rand"
 	"net"
 	"sync"
 
-	"bench_dispatch/datamodels"
 	"bench_dispatch/gopool"
 	"bench_dispatch/tools/clog"
 )
@@ -36,14 +34,9 @@ func NewHub(pool *gopool.Pool) *Hub {
 	return hub
 }
 
-func (h *Hub) getNewAdress() datamodels.AddressRide {
-	tmp := rand.Intn(nbAdress) + 1
-	return address[tmp]
-}
-
 // Register : registers new connection as a User.
 func (h *Hub) Register(conn net.Conn, id int) *Driver {
-	loc := h.getNewAdress()
+	loc := getNewAdress()
 	driver := &Driver{
 		hub:         h,
 		conn:        conn,

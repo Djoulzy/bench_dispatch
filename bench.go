@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"io"
+	"math/rand"
 	"net"
 	"net/url"
 	"os"
@@ -24,7 +25,7 @@ var (
 	conf      = &datamodels.ConfigData{}
 	pool      *gopool.Pool
 	hub       *Hub
-	address   []datamodels.AddressRide
+	address   []datamodels.Address
 	nbAdress  int
 )
 
@@ -81,12 +82,17 @@ func loadCSV() int {
 		}
 		long, _ := strconv.ParseFloat(record[1], 64)
 		lat, _ := strconv.ParseFloat(record[2], 64)
-		tmp := datamodels.AddressRide{Address: record[0], Coord: datamodels.Coordinates{Longitude: long, Latitude: lat}}
+		tmp := datamodels.Address{Name: record[0], Coord: datamodels.Coordinates{Longitude: long, Latitude: lat}}
 		address = append(address, tmp)
 		count++
 	}
 	clog.Trace("main", "Address CSV", "Loaded %d address ...", count)
 	return count
+}
+
+func getNewAdress() datamodels.Address {
+	tmp := rand.Intn(nbAdress) + 1
+	return address[tmp]
 }
 
 func main() {
