@@ -19,7 +19,7 @@ func output() {
 		os.Exit(1)
 	}
 
-	go func() { 
+	go func() {
 		switch ev := termbox.PollEvent(); ev.Type {
 		case termbox.EventKey:
 			if ev.Ch == 'q' {
@@ -49,10 +49,13 @@ func displayHub() {
 			tbprintf(4, i, termbox.ColorDefault, termbox.ColorDefault, "I")
 		case ready:
 			tbprintf(4, i, termbox.ColorGreen, termbox.ColorDefault, "R")
+		case moving:
+			tbprintf(4, i, termbox.ColorBlack, termbox.ColorGreen, "M")
 		case onRide:
 			tbprintf(4, i, termbox.ColorYellow, termbox.ColorDefault, "O")
 		case err:
 			tbprintf(4, i, termbox.ColorRed, termbox.ColorDefault, "E")
+		default:
 		}
 		tbprintf(6, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
 	}

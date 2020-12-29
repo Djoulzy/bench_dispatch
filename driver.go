@@ -12,6 +12,7 @@ import (
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/mitchellh/mapstructure"
 )
 
 // UserState : Etat d'un Driver
@@ -20,6 +21,8 @@ type UserState int
 const (
 	idle UserState = iota
 	ready
+	waitOK
+	moving
 	onRide
 	err
 )
@@ -50,10 +53,17 @@ func (d *Driver) Receive() error {
 		req = &datamodels.Request{}
 	} else {
 		switch req.Method {
-		// case "NewRide":
-		// 	tmpRide := rm.NewRide(req.Params)
-		// 	// dist := geoloc.DistanceFromHome(tmpRide.ToAddress.Coord.Latitude, tmpRide.ToAddress.Coord.Longitude)
-		// 	clog.Trace("Driver", "NewRide", "ID : %s", tmpRide.ID)
+		case "NewRide":
+			if d.driverState == ready {
+				d.acceptRide(req.Params)
+				d.driverState = waitOK
+			}
+		case "AcceptRideResponse":
+			if d.driverState == waitOK && req.Status.ID == 0 {
+				d.driverState = moving
+			} else {
+				d.driverState = ready
+			}
 		// case "AcceptRide":
 		// 	ride, err := rm.AcceptRide(d, req.Params)
 		// 	r := datamodels.Request{ID: req.ID, Method: "AcceptRideResponse", Params: ride, Status: err}
@@ -150,6 +160,21 @@ func (d *Driver) sendCoord() {
 
 func dice(nb int) int {
 	return rand.Intn(nb) + 1
+}
+
+func (d *Driver) acceptRide(params datamodels.DataParams) {
+	var tmpRide datamodels.Ride
+	mapstructure.Decode(params, &tmpRide)
+
+	req := datamodels.Request{
+		ID:     d.id,
+		Method: "AcceptRide",
+		Params: datamodels.AcceptRide{
+			RideID: tmpRide.ID,
+		},
+	}
+
+	d.write(req)
 }
 
 func (d *Driver) createCourse() {
