@@ -12,8 +12,11 @@ type Globals struct {
 
 // Bench : Parametre des tests
 type Bench struct {
-	NbClients       int
-	SendPosInterval int
+	NbDrivers    int
+	BaseTimer    int // Basde de temps
+	SendPos      int // Nb de base de temps entre deux envois de position
+	IdleDuration int // Durée de la pause en BT
+	KmByBT       int // Nb de Km parcourus par BT
 }
 
 // WSserver : Configuration des servers

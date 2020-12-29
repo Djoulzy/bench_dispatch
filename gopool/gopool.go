@@ -3,8 +3,6 @@ package gopool
 import (
 	"fmt"
 	"time"
-
-	"bench_dispatch/tools/clog"
 )
 
 // ErrScheduleTimeout returned by Pool to indicate that there no free
@@ -31,8 +29,8 @@ func NewPool(size, queue, spawn int) *Pool {
 		sem:  make(chan struct{}, size),
 		work: make(chan func(), queue),
 	}
-	clog.Info("gopool", "Init", "Worker pool created: %d workers / %d queue size", size, queue)
-	clog.Info("gopool", "Init", "Spawning %d workers", spawn)
+	// clog.Info("gopool", "Init", "Worker pool created: %d workers / %d queue size", size, queue)
+	// clog.Info("gopool", "Init", "Spawning %d workers", spawn)
 	for i := 0; i < spawn; i++ {
 		p.sem <- struct{}{}
 		go p.worker(func() {})

@@ -108,7 +108,7 @@ func main() {
 		clog.Fatal("server", "WebSocket", err)
 	}
 
-	for i := 0; i < conf.Bench.NbClients; i++ {
+	for i := 0; i < conf.Bench.NbDrivers; i++ {
 		newCon := connect(i, u)
 		safeConn := Deadliner{newCon, ioTimeout}
 		driver := hub.Register(safeConn, i)

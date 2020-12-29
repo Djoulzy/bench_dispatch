@@ -26,10 +26,14 @@ func output() {
 
 // DisplayHub : Affiche l'etat du Hub
 func displayHub() {
+	hub.mu.RLock()
+	driverList := hub.drivers
+	hub.mu.RUnlock()
+
 	termbox.SetCursor(1, 1)
-	for i := 0; i < len(hub.drivers); i++ {
-		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%d", hub.drivers[i].id)
-		switch hub.drivers[i].driverState {
+	for i := 0; i < len(driverList); i++ {
+		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%d", driverList[i].id)
+		switch driverList[i].driverState {
 		case idle:
 			tbprintf(4, i, termbox.ColorDefault, termbox.ColorDefault, "I")
 		case ready:
@@ -39,7 +43,8 @@ func displayHub() {
 		case err:
 			tbprintf(4, i, termbox.ColorRed, termbox.ColorDefault, "E")
 		}
-		tbprintf(6, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", hub.drivers[i].coord.Latitude, hub.drivers[i].coord.Longitude)
+		tbprintf(6, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
+		tbprintf(30, i, termbox.ColorDefault, termbox.ColorDefault, "%d", dice(100))
 	}
 	termbox.Flush()
 	switch ev := termbox.PollEvent(); ev.Type {

@@ -47,7 +47,7 @@ func (h *Hub) Register(conn net.Conn, id int) *Driver {
 	driver := &Driver{
 		hub:         h,
 		conn:        conn,
-		driverState: idle,
+		driverState: ready,
 		coord:       loc.Coord,
 	}
 

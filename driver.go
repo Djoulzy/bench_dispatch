@@ -4,16 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"sync"
 	"time"
 
 	"bench_dispatch/datamodels"
-	"bench_dispatch/tools/clog"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
-
 
 // UserState : Etat d'un Driver
 type UserState int
@@ -34,6 +33,7 @@ type Driver struct {
 	id          int
 	driverState UserState
 	coord       datamodels.Coordinates
+	dice        int
 }
 
 ////////////////
@@ -46,7 +46,7 @@ func (d *Driver) Receive() error {
 
 	if req == nil {
 		// Message vide de contôle.
-		clog.Trace("main", "Driver", "Empty request")
+		// clog.Trace("main", "Driver", "Empty request")
 		req = &datamodels.Request{}
 	} else {
 		switch req.Method {
@@ -62,7 +62,7 @@ func (d *Driver) Receive() error {
 		// 	mapstructure.Decode(req.Params, &d.coord)
 		// 	return nil
 		default:
-			clog.Trace("main", "Driver", "RECV: %v", req.Params)
+			// clog.Trace("main", "Driver", "RECV: %v", req.Params)
 		}
 	}
 	return nil
@@ -74,18 +74,18 @@ func (d *Driver) readRequest() (*datamodels.Request, error) {
 
 	h, r, err := wsutil.NextReader(d.conn, ws.StateClientSide)
 	if err != nil {
-		clog.Error("Driver", "readRequest::NextReader", "%s", err)
+		// clog.Error("Driver", "readRequest::NextReader", "%s", err)
 		return nil, err
 	}
 	if h.OpCode.IsControl() {
-		clog.Info("Driver", "readRequest::IsControl", "Opcode Control : %v", h)
+		// clog.Info("Driver", "readRequest::IsControl", "Opcode Control : %v", h)
 		return nil, wsutil.ControlFrameHandler(d.conn, ws.StateClientSide)(h, r)
 	}
 
 	req := &datamodels.Request{}
 	decoder := json.NewDecoder(r)
 	if err := decoder.Decode(req); err != nil {
-		clog.Error("Driver", "readRequest::Decode", "%s", err)
+		// clog.Error("Driver", "readRequest::Decode", "%s", err)
 		return nil, err
 	}
 
@@ -148,18 +148,45 @@ func (d *Driver) sendCoord() {
 	d.write(req)
 }
 
+func dice(nb int) int {
+	return rand.Intn(nb) + 1
+}
+
 // Life : Simulation des actions d'un Driver
 func (d *Driver) Life() {
-	posTimer, _ := time.ParseDuration(fmt.Sprintf("%ds", conf.Bench.SendPosInterval))
-	ticker := time.NewTicker(posTimer)
+	baseTimer, _ := time.ParseDuration(fmt.Sprintf("%ds", conf.Bench.BaseTimer))
+	ticker := time.NewTicker(baseTimer)
 	defer func() {
 		ticker.Stop()
 	}()
 
+	idleCount := 0
+	sendPosCount := 0
+
 	for {
 		select {
 		case <-ticker.C:
-			d.sendCoord()
+			switch d.driverState {
+			case idle:
+				if idleCount == 0 {
+					d.driverState = ready
+				} else {
+					idleCount--
+				}
+			case ready:
+				if dice(100) > 80 {
+					d.driverState = idle
+					idleCount = conf.Bench.IdleDuration
+					sendPosCount = 0
+				}
+			}
+
+			if sendPosCount == 0 {
+				d.sendCoord()
+				sendPosCount = conf.Bench.SendPos
+			}
+			sendPosCount--
+			d.dice = dice(100)
 		}
 	}
 }
