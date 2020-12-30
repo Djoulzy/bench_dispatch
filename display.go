@@ -58,6 +58,7 @@ func displayHub() {
 		default:
 		}
 		tbprintf(6, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
+		tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%f", driverList[i].toDest)
 	}
 
 	err := termbox.Flush()

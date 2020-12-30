@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"bench_dispatch/datamodels"
+	"bench_dispatch/geoloc"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -37,6 +38,7 @@ type Driver struct {
 	driverState UserState
 	coord       datamodels.Coordinates
 	dice        int
+	toDest      float64
 }
 
 ////////////////
@@ -59,8 +61,12 @@ func (d *Driver) Receive() error {
 				d.driverState = waitOK
 			}
 		case "AcceptRideResponse":
+			var tmpRide datamodels.Ride
+			mapstructure.Decode(req.Params, &tmpRide)
+
 			if d.driverState == waitOK && req.Status.ID == 0 {
 				d.driverState = moving
+				d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, tmpRide.FromAddress.Coord.Latitude, tmpRide.FromAddress.Coord.Longitude) / 1000
 			} else {
 				d.driverState = ready
 			}
@@ -232,6 +238,11 @@ func (d *Driver) Life() {
 					idleCount = conf.Bench.IdleDuration
 					sendPosCount = 0
 					d.createCourse()
+				}
+			case moving:
+				d.toDest -= float64(conf.Bench.KmByBT)
+				if d.toDest <= 0 {
+					d.driverState = onRide
 				}
 			}
 
