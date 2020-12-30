@@ -96,6 +96,12 @@ type Ride struct {
 	Options     OptionsRide  `mapstructure:"options" json:"options"`
 }
 
+// RideUpdate : Modifie l'état de la course
+type RideUpdate struct {
+	ID    string    `mapstructure:"rideId" json:"rideId"`
+	State RideState `mapstructure:"state" json:"state"`
+}
+
 /*
 
 ////////// UpdateDriverLocation //////////

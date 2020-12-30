@@ -14,6 +14,7 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/mitchellh/mapstructure"
+	"github.com/rs/xid"
 )
 
 // UserState : Etat d'un Driver
@@ -38,6 +39,7 @@ type Driver struct {
 	driverState UserState
 	coord       datamodels.Coordinates
 	dice        int
+	ride        datamodels.Ride
 	toDest      float64
 }
 
@@ -65,7 +67,9 @@ func (d *Driver) Receive() error {
 			mapstructure.Decode(req.Params, &tmpRide)
 
 			if d.driverState == waitOK && req.Status.ID == 0 {
+				d.ride = tmpRide
 				d.driverState = moving
+				d.updateRide(datamodels.Approach)
 				d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, tmpRide.FromAddress.Coord.Latitude, tmpRide.FromAddress.Coord.Longitude) / 1000
 			} else {
 				d.driverState = ready
@@ -168,6 +172,19 @@ func dice(nb int) int {
 	return rand.Intn(nb) + 1
 }
 
+func (d *Driver) updateRide(state datamodels.RideState) {
+	req := datamodels.Request{
+		ID:     d.id,
+		Method: "ChangeRideState",
+		Params: datamodels.RideUpdate{
+			ID:    d.ride.ID,
+			State: state,
+		},
+	}
+
+	d.write(req)
+}
+
 func (d *Driver) acceptRide(params datamodels.DataParams) {
 	var tmpRide datamodels.Ride
 	mapstructure.Decode(params, &tmpRide)
@@ -175,9 +192,7 @@ func (d *Driver) acceptRide(params datamodels.DataParams) {
 	req := datamodels.Request{
 		ID:     d.id,
 		Method: "AcceptRide",
-		Params: datamodels.AcceptRide{
-			RideID: tmpRide.ID,
-		},
+		Params: datamodels.AcceptRide{RideID: tmpRide.ID},
 	}
 
 	d.write(req)
@@ -188,7 +203,7 @@ func (d *Driver) createCourse() {
 
 	ride := datamodels.Ride{
 		Origin:      datamodels.Defaut,
-		ID:          fmt.Sprintf("%d", dice(1000)),
+		ID:          xid.New().String(),
 		Date:        now.Format(time.RFC3339),
 		ValidUntil:  now.Format(time.RFC3339),
 		State:       datamodels.Pending,
@@ -243,6 +258,16 @@ func (d *Driver) Life() {
 				d.toDest -= float64(conf.Bench.KmByBT)
 				if d.toDest <= 0 {
 					d.driverState = onRide
+					d.updateRide(datamodels.PickUpPassenger)
+					d.coord = d.ride.FromAddress.Coord
+					d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, d.ride.ToAddress.Coord.Latitude, d.ride.ToAddress.Coord.Longitude) / 1000
+				}
+			case onRide:
+				d.toDest -= float64(conf.Bench.KmByBT)
+				if d.toDest <= 0 {
+					d.driverState = ready
+					d.updateRide(datamodels.Ended)
+					d.coord = d.ride.ToAddress.Coord
 				}
 			}
 
