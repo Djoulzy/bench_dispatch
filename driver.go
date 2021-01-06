@@ -37,6 +37,7 @@ type Driver struct {
 	hub         *Hub
 	id          int
 	driverState UserState
+	in          chan UserState
 	coord       datamodels.Coordinates
 	dice        int
 	ride        datamodels.Ride
@@ -59,20 +60,20 @@ func (d *Driver) Receive() error {
 		switch req.Method {
 		case "NewRide":
 			if d.driverState == ready {
+				d.in <- waitOK
 				d.acceptRide(req.Params)
-				d.driverState = waitOK
 			}
 		case "AcceptRideResponse":
 			var tmpRide datamodels.Ride
 			mapstructure.Decode(req.Params, &tmpRide)
 
 			if d.driverState == waitOK && req.Status.ID == 0 {
+				d.in <- moving
 				d.ride = tmpRide
-				d.driverState = moving
 				d.updateRide(datamodels.Approach)
 				d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, tmpRide.FromAddress.Coord.Latitude, tmpRide.FromAddress.Coord.Longitude) / 1000
 			} else {
-				d.driverState = ready
+				d.in <- ready
 			}
 		// case "AcceptRide":
 		// 	ride, err := rm.AcceptRide(d, req.Params)
@@ -248,7 +249,7 @@ func (d *Driver) Life() {
 					idleCount--
 				}
 			case ready:
-				if dice(100) > 95 {
+				if dice(100) < conf.Bench.PercentForIdle {
 					d.driverState = idle
 					idleCount = conf.Bench.IdleDuration
 					sendPosCount = 0
@@ -265,6 +266,7 @@ func (d *Driver) Life() {
 			case onRide:
 				d.toDest -= float64(conf.Bench.KmByBT)
 				if d.toDest <= 0 {
+					d.toDest = 0
 					d.driverState = ready
 					d.updateRide(datamodels.Ended)
 					d.coord = d.ride.ToAddress.Coord
@@ -277,6 +279,9 @@ func (d *Driver) Life() {
 			}
 			sendPosCount--
 			d.dice = dice(100)
+
+		case s := <-d.in:
+			d.driverState = s
 		}
 	}
 }

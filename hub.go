@@ -43,6 +43,7 @@ func (h *Hub) Register(conn net.Conn, id int) *Driver {
 		driverState: ready,
 		coord:       loc.Coord,
 	}
+	driver.in = make(chan UserState, 1)
 
 	h.mu.Lock()
 	{

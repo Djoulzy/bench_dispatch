@@ -74,11 +74,12 @@ type RideState int
 
 // Etats des course
 const (
-	Started RideState = iota
-	Approach
+	Approach RideState = iota
 	PickUpPassenger
 	Ended
 	Cancelled
+	Delayed
+	Waiting
 	Booked
 	Pending
 )

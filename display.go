@@ -46,19 +46,21 @@ func displayHub() {
 		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%d", driverList[i].id)
 		switch driverList[i].driverState {
 		case idle:
-			tbprintf(4, i, termbox.ColorDefault, termbox.ColorDefault, "I")
+			tbprintf(5, i, termbox.ColorDefault, termbox.ColorDefault, "I d l e")
 		case ready:
-			tbprintf(4, i, termbox.ColorGreen, termbox.ColorDefault, "R")
+			tbprintf(5, i, termbox.ColorGreen, termbox.ColorDefault, " Ready ")
+		case waitOK:
+			tbprintf(5, i, termbox.ColorBlack, termbox.ColorCyan, "Wait OK")
 		case moving:
-			tbprintf(4, i, termbox.ColorBlack, termbox.ColorGreen, "M")
+			tbprintf(5, i, termbox.ColorBlack, termbox.ColorGreen, "Approch")
 		case onRide:
-			tbprintf(4, i, termbox.ColorYellow, termbox.ColorDefault, "O")
+			tbprintf(5, i, termbox.ColorBlack, termbox.ColorYellow, "On Ride")
 		case err:
-			tbprintf(4, i, termbox.ColorRed, termbox.ColorDefault, "E")
+			tbprintf(5, i, termbox.ColorRed, termbox.ColorDefault, "-Error-")
 		default:
 		}
-		tbprintf(6, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
-		tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%f", driverList[i].toDest)
+		tbprintf(15, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
+		tbprintf(34, i, termbox.ColorDefault, termbox.ColorDefault, "%f", driverList[i].toDest)
 	}
 
 	err := termbox.Flush()
