@@ -3,6 +3,7 @@ package clog
 import (
 	"fmt"
 	"log"
+	"os"
 )
 
 // LogLevel : Niveau de log
@@ -13,6 +14,9 @@ var StartLogging bool
 
 //ServiceCallback usages
 var ServiceCallback func(string)
+
+var logToFile = false
+var fileDesc *os.File
 
 var fgColors = map[string]string{
 	"black":        "0;30",
@@ -158,6 +162,15 @@ func logOutput(etype errorsColors, pack string, function string, str string, var
 	log.Printf(tmp, vars...)
 }
 
+// File logger
+func File(pack string, function string, str string, vars ...interface{}) {
+	if StartLogging == false || logToFile == false {
+		return
+	}
+	before := fmt.Sprintf("%s|%s| %s\n", pack, function, str)
+	fileDesc.Write([]byte(fmt.Sprintf(before, vars...)))
+}
+
 //Warn message
 func Warn(pack string, function string, str string, vars ...interface{}) {
 	logOutput(_Warn, pack, function, str, vars...)
@@ -200,4 +213,15 @@ func Service(pack string, function string, str string, vars ...interface{}) {
 	if ServiceCallback != nil {
 		ServiceCallback(fmt.Sprintf(str, vars...))
 	}
+}
+
+// EnableFileLog : Log also to file
+func EnableFileLog(file string) {
+	tmp, err := os.Create(file)
+	if err != nil {
+		panic(err)
+	}
+
+	logToFile = true
+	fileDesc = tmp
 }
