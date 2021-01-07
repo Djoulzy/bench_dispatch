@@ -37,9 +37,9 @@ func output() {
 
 // DisplayHub : Affiche l'etat du Hub
 func displayHub() {
-	hub.mu.RLock()
+	// hub.mu.RLock()
 	driverList := hub.drivers
-	hub.mu.RUnlock()
+	// hub.mu.RUnlock()
 
 	termbox.SetCursor(1, 1)
 	for i := 0; i < len(driverList); i++ {
@@ -61,6 +61,7 @@ func displayHub() {
 		}
 		tbprintf(15, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
 		tbprintf(34, i, termbox.ColorDefault, termbox.ColorDefault, "%f", driverList[i].toDest)
+		tbprintf(44, i, termbox.ColorDefault, termbox.ColorDefault, "%s", driverList[i].ride.ToAddress.Name)
 	}
 
 	err := termbox.Flush()

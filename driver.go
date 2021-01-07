@@ -33,6 +33,7 @@ const (
 // Cett structure contient tous les infos de communication
 type Driver struct {
 	io          sync.Mutex
+	mu          sync.RWMutex
 	conn        io.ReadWriteCloser
 	hub         *Hub
 	id          int
@@ -59,14 +60,17 @@ func (d *Driver) Receive() error {
 	} else {
 		switch req.Method {
 		case "NewRide":
+			d.mu.Lock()
 			if d.driverState == ready {
 				d.in <- waitOK
 				d.acceptRide(req.Params)
 			}
+			d.mu.Unlock()
 		case "AcceptRideResponse":
 			var tmpRide datamodels.Ride
 			mapstructure.Decode(req.Params, &tmpRide)
 
+			d.mu.Lock()
 			if d.driverState == waitOK && req.Status.ID == 0 {
 				d.in <- moving
 				d.ride = tmpRide
@@ -75,13 +79,7 @@ func (d *Driver) Receive() error {
 			} else {
 				d.in <- ready
 			}
-		// case "AcceptRide":
-		// 	ride, err := rm.AcceptRide(d, req.Params)
-		// 	r := datamodels.Request{ID: req.ID, Method: "AcceptRideResponse", Params: ride, Status: err}
-		// 	return d.write(r)
-		// case "UpdateDriverLocation":
-		// 	mapstructure.Decode(req.Params, &d.coord)
-		// 	return nil
+			d.mu.Unlock()
 		default:
 			// clog.Trace("main", "Driver", "RECV: %v", req.Params)
 		}
@@ -241,6 +239,7 @@ func (d *Driver) Life() {
 	for {
 		select {
 		case <-ticker.C:
+			d.mu.Lock()
 			switch d.driverState {
 			case idle:
 				if idleCount == 0 {
@@ -270,8 +269,10 @@ func (d *Driver) Life() {
 					d.driverState = ready
 					d.updateRide(datamodels.Ended)
 					d.coord = d.ride.ToAddress.Coord
+					d.ride = datamodels.Ride{}
 				}
 			}
+			d.mu.Unlock()
 
 			if sendPosCount == 0 {
 				d.sendCoord()
@@ -281,7 +282,9 @@ func (d *Driver) Life() {
 			d.dice = dice(100)
 
 		case s := <-d.in:
+			d.mu.Lock()
 			d.driverState = s
+			d.mu.Unlock()
 		}
 	}
 }
