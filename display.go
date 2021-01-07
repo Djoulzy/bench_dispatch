@@ -60,7 +60,7 @@ func displayHub() {
 		default:
 		}
 		tbprintf(15, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
-		tbprintf(34, i, termbox.ColorDefault, termbox.ColorDefault, "%f", driverList[i].toDest)
+		tbprintf(34, i, termbox.ColorDefault, termbox.ColorDefault, "%.1f Km", driverList[i].toDest)
 		tbprintf(44, i, termbox.ColorDefault, termbox.ColorDefault, "%s", driverList[i].ride.ToAddress.Name)
 	}
 
