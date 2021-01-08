@@ -74,14 +74,16 @@ type RideState int
 
 // Etats des course
 const (
-	Approach RideState = iota
-	PickUpPassenger
-	Ended
-	Cancelled
-	Delayed
-	Waiting
-	Booked
-	Pending
+   Pending  RideState = iota
+   Booked
+   Started
+   Approach
+   Delayed
+   Waiting
+   PickUpPassenger
+   PendingPayment
+   Ended
+   Cancelled
 )
 
 // Ride : modele de donnée pour une course
