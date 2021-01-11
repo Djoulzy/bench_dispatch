@@ -10,6 +10,7 @@ import (
 
 	"bench_dispatch/datamodels"
 	"bench_dispatch/geoloc"
+	"bench_dispatch/tools/clog"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -56,32 +57,18 @@ func (d *Driver) Receive() error {
 	if req == nil {
 		// Message vide de contôle.
 		// clog.Trace("main", "Driver", "Empty request")
+		clog.File("main", "Driver", "Empty request")
 		req = &datamodels.Request{}
 	} else {
 		switch req.Method {
 		case "NewRide":
-			d.mu.Lock()
-			if d.driverState == ready {
-				d.in <- waitOK
-				d.acceptRide(req.Params)
-			}
-			d.mu.Unlock()
+			d.acceptRide(req.Params)
 		case "AcceptRideResponse":
 			var tmpRide datamodels.Ride
 			mapstructure.Decode(req.Params, &tmpRide)
-
-			d.mu.Lock()
-			if d.driverState == waitOK && req.Status.ID == 0 {
-				d.in <- moving
-				d.ride = tmpRide
-				d.updateRide(datamodels.Approach)
-				d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, tmpRide.FromAddress.Coord.Latitude, tmpRide.FromAddress.Coord.Longitude) / 1000
-			} else {
-				d.in <- ready
-			}
-			d.mu.Unlock()
+			d.computeRideResponse(req.Status.ID, tmpRide)
 		default:
-			// clog.Trace("main", "Driver", "RECV: %v", req.Params)
+			clog.File("main", "Driver", "RECV: %v", req.Params)
 		}
 	}
 	return nil
@@ -154,6 +141,10 @@ func (d *Driver) write(x interface{}) error {
 	return w.Flush()
 }
 
+/////////////////////////////////
+// Protocole
+/////////////////////////////////
+
 func (d *Driver) sendCoord() {
 	req := datamodels.Request{
 		ID:     d.id,
@@ -181,6 +172,7 @@ func (d *Driver) updateRide(state datamodels.RideState) {
 		},
 	}
 
+	clog.File("Driver", "updateRide", "%d for %s -> %d", d.id, d.ride.ID, state)
 	d.write(req)
 }
 
@@ -188,13 +180,41 @@ func (d *Driver) acceptRide(params datamodels.DataParams) {
 	var tmpRide datamodels.Ride
 	mapstructure.Decode(params, &tmpRide)
 
-	req := datamodels.Request{
-		ID:     d.id,
-		Method: "AcceptRide",
-		Params: datamodels.AcceptRide{RideID: tmpRide.ID},
+	d.mu.Lock()
+	if d.driverState == ready {
+		req := datamodels.Request{
+			ID:     d.id,
+			Method: "AcceptRide",
+			Params: datamodels.AcceptRide{RideID: tmpRide.ID},
+		}
+
+		clog.File("Driver", "AcceptRide", "%d for %s", d.id, tmpRide.ID)
+		d.write(req)
+		d.driverState = waitOK
 	}
 
-	d.write(req)
+	d.mu.Unlock()
+}
+
+func (d *Driver) computeRideResponse(responseCode int, ride datamodels.Ride) {
+	defer d.mu.Unlock()
+	d.mu.Lock()
+
+	if responseCode != 0 {
+		clog.File("Driver", "RideRejected", "%d -> %s", d.id, ride.ID)
+		d.driverState = ready
+		return
+	}
+
+	if d.driverState == waitOK {
+		clog.File("Driver", "Ride OK", "%d -> %s", d.id, ride.ID)
+		d.ride = ride
+		d.updateRide(datamodels.Approach)
+		d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, ride.FromAddress.Coord.Latitude, ride.FromAddress.Coord.Longitude) / 1000
+		d.driverState = moving
+		return
+	}
+	clog.File("Driver", "Ride OK ERROR", "%d -> %s", d.id, ride.ID)
 }
 
 func (d *Driver) createCourse() {
@@ -243,13 +263,13 @@ func (d *Driver) Life() {
 			switch d.driverState {
 			case idle:
 				if idleCount == 0 {
-					d.driverState = ready
+					d.in <- ready
 				} else {
 					idleCount--
 				}
 			case ready:
 				if dice(100) < conf.Bench.PercentForIdle {
-					d.driverState = idle
+					d.in <- idle
 					idleCount = conf.Bench.IdleDuration
 					sendPosCount = 0
 					d.createCourse()
@@ -257,19 +277,19 @@ func (d *Driver) Life() {
 			case moving:
 				d.toDest -= float64(conf.Bench.KmByBT)
 				if d.toDest <= 0 {
-					d.driverState = onRide
 					d.updateRide(datamodels.PickUpPassenger)
 					d.coord = d.ride.FromAddress.Coord
 					d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, d.ride.ToAddress.Coord.Latitude, d.ride.ToAddress.Coord.Longitude) / 1000
+					d.in <- onRide
 				}
 			case onRide:
 				d.toDest -= float64(conf.Bench.KmByBT)
 				if d.toDest <= 0 {
 					d.toDest = 0
-					d.driverState = ready
 					d.updateRide(datamodels.Ended)
 					d.coord = d.ride.ToAddress.Coord
 					d.ride = datamodels.Ride{}
+					d.in <- ready
 				}
 			}
 			d.mu.Unlock()
@@ -284,6 +304,7 @@ func (d *Driver) Life() {
 		case s := <-d.in:
 			d.mu.Lock()
 			d.driverState = s
+			clog.File("Driver", "updateDriver", "%d -> %d", d.id, s)
 			d.mu.Unlock()
 		}
 	}

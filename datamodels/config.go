@@ -8,6 +8,7 @@ type Globals struct {
 	MaxUsers     int
 	Workers      int
 	QueueSize    int
+	FileLog      string
 }
 
 // Bench : Parametre des tests

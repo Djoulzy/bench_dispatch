@@ -101,6 +101,9 @@ func main() {
 
 	clog.LogLevel = 5
 	clog.StartLogging = true
+	if conf.FileLog != "" {
+		clog.EnableFileLog(conf.FileLog)
+	}
 
 	nbAdress = loadCSV()
 
