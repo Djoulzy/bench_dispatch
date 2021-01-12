@@ -8,19 +8,26 @@ type Request struct {
 	ID     int        `json:"id"`
 	Method string     `json:"method"`
 	Params DataParams `json:"params"`
-	Status Error      `json:"status"`
 }
 
 // Response : Format d'une reponse
 type Response struct {
 	ID     int        `json:"id"`
-	Result DataParams `json:"result"`
+	Method string     `json:"method"`
+	Params DataParams `json:"params"`
+	Status Error      `json:"status"`
 }
 
 // Error : gestion d'une erreur de requete
 type Error struct {
 	ID      int    `json:"errorCode"`
 	Message string `json:"errorMessage"`
+}
+
+// Success : Simplification d'ecriture en cas de succes
+var Success = Error{
+	ID:      0,
+	Message: "OK",
 }
 
 // VehicleType : type de voiture du chauffeur
@@ -74,16 +81,16 @@ type RideState int
 
 // Etats des course
 const (
-   Pending  RideState = iota
-   Booked
-   Started
-   Approach
-   Delayed
-   Waiting
-   PickUpPassenger
-   PendingPayment
-   Ended
-   Cancelled
+	Pending RideState = iota
+	Booked
+	Started
+	Approach
+	Delayed
+	Waiting
+	PickUpPassenger
+	PendingPayment
+	Ended
+	Cancelled
 )
 
 // Ride : modele de donnée pour une course

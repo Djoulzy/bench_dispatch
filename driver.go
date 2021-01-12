@@ -52,13 +52,13 @@ type Driver struct {
 
 // Receive : Lit le message en attente.
 func (d *Driver) Receive() error {
-	req, _ := d.readRequest()
+	req, _ := d.readResponse()
 
 	if req == nil {
 		// Message vide de contôle.
 		// clog.Trace("main", "Driver", "Empty request")
 		clog.File("main", "Driver", "Empty request")
-		req = &datamodels.Request{}
+		req = &datamodels.Response{}
 	} else {
 		switch req.Method {
 		case "NewRide":
@@ -74,7 +74,7 @@ func (d *Driver) Receive() error {
 	return nil
 }
 
-func (d *Driver) readRequest() (*datamodels.Request, error) {
+func (d *Driver) readResponse() (*datamodels.Response, error) {
 	d.io.Lock()
 	defer d.io.Unlock()
 
@@ -88,7 +88,7 @@ func (d *Driver) readRequest() (*datamodels.Request, error) {
 		return nil, wsutil.ControlFrameHandler(d.conn, ws.StateClientSide)(h, r)
 	}
 
-	req := &datamodels.Request{}
+	req := &datamodels.Response{}
 	decoder := json.NewDecoder(r)
 	if err := decoder.Decode(req); err != nil {
 		// clog.Error("Driver", "readRequest::Decode", "%s", err)
@@ -103,19 +103,14 @@ func (d *Driver) readRequest() (*datamodels.Request, error) {
 ////////////////
 
 // writeResultTo : Retourne le resultat de la méthode à l'appelant
-func (d *Driver) writeResultTo(req *datamodels.Request, result datamodels.DataParams) error {
-	return d.write(datamodels.Response{
-		ID:     req.ID,
-		Result: result,
-	})
-}
-
-func (d *Driver) writeErrorTo(req *datamodels.Request, id int, err string) error {
-	req.Status = datamodels.Error{
-		ID:      id,
-		Message: err,
+func (d *Driver) writeRequest(reqID int, method string, req datamodels.DataParams) error {
+	request := datamodels.Request{
+		ID:     reqID,
+		Method: method,
+		Params: req,
 	}
-	return d.write(req)
+
+	return d.write(request)
 }
 
 func (d *Driver) writeRaw(p []byte) error {
@@ -146,16 +141,12 @@ func (d *Driver) write(x interface{}) error {
 /////////////////////////////////
 
 func (d *Driver) sendCoord() {
-	req := datamodels.Request{
-		ID:     d.id,
-		Method: "UpdateDriverLocation",
-		Params: datamodels.Coordinates{
-			Latitude:  d.coord.Latitude,
-			Longitude: d.coord.Longitude,
-		},
+	params := datamodels.Coordinates{
+		Latitude:  d.coord.Latitude,
+		Longitude: d.coord.Longitude,
 	}
 
-	d.write(req)
+	d.writeRequest(d.id, "UpdateDriverLocation", params)
 }
 
 func dice(nb int) int {
@@ -163,17 +154,13 @@ func dice(nb int) int {
 }
 
 func (d *Driver) updateRide(state datamodels.RideState) {
-	req := datamodels.Request{
-		ID:     d.id,
-		Method: "ChangeRideState",
-		Params: datamodels.RideUpdate{
-			ID:    d.ride.ID,
-			State: state,
-		},
+	params := datamodels.RideUpdate{
+		ID:    d.ride.ID,
+		State: state,
 	}
 
 	clog.File("Driver", "updateRide", "%d for %s -> %d", d.id, d.ride.ID, state)
-	d.write(req)
+	d.writeRequest(d.id, "ChangeRideState", params)
 }
 
 func (d *Driver) acceptRide(params datamodels.DataParams) {
@@ -182,14 +169,8 @@ func (d *Driver) acceptRide(params datamodels.DataParams) {
 
 	d.mu.Lock()
 	if d.driverState == ready {
-		req := datamodels.Request{
-			ID:     d.id,
-			Method: "AcceptRide",
-			Params: datamodels.AcceptRide{RideID: tmpRide.ID},
-		}
-
 		clog.File("Driver", "AcceptRide", "%d for %s", d.id, tmpRide.ID)
-		d.write(req)
+		d.writeRequest(d.id, "AcceptRide", datamodels.AcceptRide{RideID: tmpRide.ID})
 		d.driverState = waitOK
 	}
 
