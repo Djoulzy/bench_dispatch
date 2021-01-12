@@ -14,11 +14,12 @@ type Globals struct {
 // Bench : Parametre des tests
 type Bench struct {
 	NbDrivers      int
-	BaseTimer      int // Basde de temps
-	SendPos        int // Nb de base de temps entre deux envois de position
-	IdleDuration   int // Durée de la pause en BT
-	PercentForIdle int // Pourcentage de chance de passer en Idle
-	KmByBT         int // Nb de Km parcourus par BT
+	BaseTimer      int  // Basde de temps
+	SendPos        int  // Nb de base de temps entre deux envois de position
+	IdleDuration   int  // Durée de la pause en BT
+	IdleCreateRide bool // Doit on generer des courses
+	PercentForIdle int  // Pourcentage de chance de passer en Idle
+	KmByBT         int  // Nb de Km parcourus par BT
 }
 
 // WSserver : Configuration des servers

@@ -117,6 +117,8 @@ func main() {
 		clog.Fatal("server", "WebSocket", err)
 	}
 
+	go output()
+
 	for i := 0; i < conf.Bench.NbDrivers; i++ {
 		newCon := connect(i, u)
 		safeConn := Deadliner{newCon, ioTimeout}
@@ -141,9 +143,9 @@ func main() {
 				}
 			})
 		})
-	}
 
-	go output()
+		time.Sleep(time.Second)
+	}
 
 	<-exit
 }

@@ -41,8 +41,9 @@ func displayHub() {
 	driverList := hub.drivers
 	// hub.mu.RUnlock()
 
+	var i int
 	termbox.SetCursor(1, 1)
-	for i := 0; i < len(driverList); i++ {
+	for i = 0; i < len(driverList); i++ {
 		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%d", driverList[i].id)
 		switch driverList[i].driverState {
 		case idle:
@@ -67,6 +68,8 @@ func displayHub() {
 			tbprintf(44, i, termbox.ColorDefault, termbox.ColorDefault, "%s", driverList[i].ride.ToAddress.Name)
 		}
 	}
+	t := time.Now()
+	tbprintf(34, i, termbox.ColorDefault, termbox.ColorDefault, "%d:%d:%d", t.Hour(), t.Minute(), t.Second())
 
 	err := termbox.Flush()
 	if err != nil {

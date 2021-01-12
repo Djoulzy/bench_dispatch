@@ -138,10 +138,10 @@ type RideUpdate struct {
       "id":"7698765",
       "date":"",
       "toAddress":{
-         "address":"arrivee adresse 14019 Ubcqoeu",
+         "address":"250 plage de l'Estaque 13016 Marseille",
          "coordinates":{
-            "longitude":5.37436,
-            "latitude":43.29539
+            "longitude":5.2934914462,
+            "latitude":43.3586309109
          }
       },
       "validUntil":"",
@@ -150,10 +150,10 @@ type RideUpdate struct {
          "numberOfPassengers":2
       },
       "fromAddress":{
-         "address":"depart adresse 14019 Ubcqoeu",
+         "address":"Quai de Rive Neuve 13007 Marseille",
          "coordinates":{
-            "longitude":5.4925626895974045,
-            "latitude":43.471590283851015
+            "longitude":5.36785419454433,
+            "latitude":43.2924901379708
          }
       },
       "isImmediate":true
