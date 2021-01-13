@@ -30,6 +30,12 @@ var Success = Error{
 	Message: "OK",
 }
 
+// Login : Structure d'info pour le login Driver
+type Login struct {
+	ID   int
+	Name string
+}
+
 // VehicleType : type de voiture du chauffeur
 type VehicleType string
 

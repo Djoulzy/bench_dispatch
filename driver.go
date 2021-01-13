@@ -38,6 +38,7 @@ type Driver struct {
 	conn        io.ReadWriteCloser
 	hub         *Hub
 	id          int
+	name        string
 	driverState UserState
 	coord       datamodels.Coordinates
 	dice        int
@@ -65,7 +66,7 @@ func (d *Driver) Receive() error {
 		case "AcceptRideResponse":
 			d.computeRideResponse(req.Status.ID, req.Params)
 		default:
-			clog.File("main", "Driver", "RECV: %v", req.Params)
+			clog.File("main", "Driver", "RECV: [%d] %s", req.Status.ID, req.Status.Message)
 		}
 	}
 	return nil
@@ -227,6 +228,14 @@ func (d *Driver) createCourse() {
 	d.write(req)
 }
 
+func (d *Driver) login() {
+	login := datamodels.Login{
+		ID:   d.id,
+		Name: d.name,
+	}
+	d.writeRequest(d.id, "Login", login)
+}
+
 // Life : Simulation des actions d'un Driver
 func (d *Driver) Life() {
 	baseTimer, _ := time.ParseDuration(fmt.Sprintf("%ds", conf.Bench.BaseTimer))
@@ -234,6 +243,8 @@ func (d *Driver) Life() {
 	defer func() {
 		ticker.Stop()
 	}()
+
+	d.login()
 
 	idleCount := 0
 	sendPosCount := 0
@@ -285,11 +296,11 @@ func (d *Driver) Life() {
 			sendPosCount--
 			d.dice = dice(100)
 
-		// case s := <-d.in:
-		// 	d.mu.Lock()
-		// 	d.driverState = s
-		// 	clog.File("Driver", "updateDriver", "%d -> %d", d.id, s)
-		// 	d.mu.Unlock()
+			// case s := <-d.in:
+			// 	d.mu.Lock()
+			// 	d.driverState = s
+			// 	clog.File("Driver", "updateDriver", "%d -> %d", d.id, s)
+			// 	d.mu.Unlock()
 		}
 	}
 }

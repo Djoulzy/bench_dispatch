@@ -35,7 +35,7 @@ func NewHub(pool *gopool.Pool) *Hub {
 }
 
 // Register : registers new connection as a User.
-func (h *Hub) Register(conn net.Conn, id int) *Driver {
+func (h *Hub) Register(conn net.Conn, id int, name string) *Driver {
 	loc := getNewAdress()
 	driver := &Driver{
 		hub:         h,
@@ -48,6 +48,7 @@ func (h *Hub) Register(conn net.Conn, id int) *Driver {
 	h.mu.Lock()
 	{
 		driver.id = id
+		driver.name = name
 		h.drivers[driver.id] = driver
 	}
 	h.mu.Unlock()

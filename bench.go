@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/csv"
 	"io"
@@ -90,6 +91,20 @@ func loadCSV() int {
 	return count
 }
 
+func getName(nb int) string {
+	f, err := os.Open("name.txt")
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for i := 0; i <= nb; i++ {
+		scanner.Scan()
+	}
+	return scanner.Text()
+}
+
 func getNewAdress() datamodels.Address {
 	tmp := rand.Intn(nbAdress) + 1
 	return address[tmp]
@@ -122,7 +137,7 @@ func main() {
 	for i := 0; i < conf.Bench.NbDrivers; i++ {
 		newCon := connect(i, u)
 		safeConn := Deadliner{newCon, ioTimeout}
-		driver := hub.Register(safeConn, i)
+		driver := hub.Register(safeConn, i, getName(i))
 
 		desc := netpoll.Must(netpoll.HandleRead(newCon))
 

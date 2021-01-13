@@ -44,32 +44,32 @@ func displayHub() {
 	var i int
 	termbox.SetCursor(1, 1)
 	for i = 0; i < len(driverList); i++ {
-		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%d", driverList[i].id)
+		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%s", driverList[i].name)
 		switch driverList[i].driverState {
 		case idle:
-			tbprintf(5, i, termbox.ColorDefault, termbox.ColorDefault, "I d l e")
+			tbprintf(15, i, termbox.ColorDefault, termbox.ColorDefault, "I d l e")
 		case ready:
-			tbprintf(5, i, termbox.ColorGreen, termbox.ColorDefault, " Ready ")
+			tbprintf(15, i, termbox.ColorGreen, termbox.ColorDefault, " Ready ")
 		case waitOK:
-			tbprintf(5, i, termbox.ColorBlack, termbox.ColorCyan, "Wait OK")
+			tbprintf(15, i, termbox.ColorBlack, termbox.ColorCyan, "Wait OK")
 		case moving:
-			tbprintf(5, i, termbox.ColorBlack, termbox.ColorGreen, "Approch")
+			tbprintf(15, i, termbox.ColorBlack, termbox.ColorGreen, "Approch")
 		case onRide:
-			tbprintf(5, i, termbox.ColorBlack, termbox.ColorYellow, "On Ride")
+			tbprintf(15, i, termbox.ColorBlack, termbox.ColorYellow, "On Ride")
 		case err:
-			tbprintf(5, i, termbox.ColorRed, termbox.ColorDefault, "-Error-")
+			tbprintf(15, i, termbox.ColorRed, termbox.ColorDefault, "-Error-")
 		default:
 		}
-		tbprintf(15, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
-		tbprintf(34, i, termbox.ColorDefault, termbox.ColorDefault, "%.1f Km ", driverList[i].toDest)
+		tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", driverList[i].coord.Latitude, driverList[i].coord.Longitude)
+		tbprintf(44, i, termbox.ColorDefault, termbox.ColorDefault, "%.1f Km ", driverList[i].toDest)
 		if driverList[i].ride.ToAddress.Name == "" {
-			tbprintf(44, i, termbox.ColorDefault, termbox.ColorDefault, "                                                    ")
+			tbprintf(54, i, termbox.ColorDefault, termbox.ColorDefault, "                                                    ")
 		} else {
-			tbprintf(44, i, termbox.ColorDefault, termbox.ColorDefault, "%s", driverList[i].ride.ToAddress.Name)
+			tbprintf(54, i, termbox.ColorDefault, termbox.ColorDefault, "%s", driverList[i].ride.ToAddress.Name)
 		}
 	}
 	t := time.Now()
-	tbprintf(34, i, termbox.ColorDefault, termbox.ColorDefault, "%d:%d:%d", t.Hour(), t.Minute(), t.Second())
+	tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%d:%d:%d", t.Hour(), t.Minute(), t.Second())
 
 	err := termbox.Flush()
 	if err != nil {
