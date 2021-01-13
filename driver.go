@@ -52,13 +52,15 @@ type Driver struct {
 
 // Receive : Lit le message en attente.
 func (d *Driver) Receive() error {
-	req, _ := d.readResponse()
+	req, err := d.readResponse()
 
+	if err != nil {
+		clog.File("Driver", "Receive", "Driver: %s - ERROR: %v", d.name, err)
+		return err
+	}
 	if req == nil {
 		// Message vide de contôle.
-		// clog.Trace("main", "Driver", "Empty request")
-		clog.File("main", "Driver", "Empty request")
-		req = &datamodels.Response{}
+		clog.File("Driver", "Receive", "Driver: %s - Empty request", d.name)
 	} else {
 		switch req.Method {
 		case "NewRide":
@@ -66,7 +68,7 @@ func (d *Driver) Receive() error {
 		case "AcceptRideResponse":
 			d.computeRideResponse(req.Status.ID, req.Params)
 		default:
-			clog.File("main", "Driver", "RECV: [%d] %s", req.Status.ID, req.Status.Message)
+			clog.File("Driver", "Receive", "Driver: %s - RECV: Method: %s [%d] %s", d.name, req.Method, req.Status.ID, req.Status.Message)
 		}
 	}
 	return nil
@@ -79,6 +81,7 @@ func (d *Driver) readResponse() (*datamodels.Response, error) {
 	h, r, err := wsutil.NextReader(d.conn, ws.StateClientSide)
 	if err != nil {
 		// clog.Error("Driver", "readRequest::NextReader", "%s", err)
+		clog.File("Driver", "readResponse", "Driver: %s - Empty request", d.name)
 		return nil, err
 	}
 	if h.OpCode.IsControl() {
@@ -157,7 +160,7 @@ func (d *Driver) updateRide(state datamodels.RideState) {
 		State: state,
 	}
 
-	clog.File("Driver", "updateRide", "Driver: %d ask Ride: %s -> %d", d.id, d.ride.ID, state)
+	clog.File("Driver", "updateRide", "Driver: %s ask Ride: %s -> %d", d.name, d.ride.ID, state)
 	d.writeRequest(d.id, "ChangeRideState", params)
 }
 
@@ -167,7 +170,7 @@ func (d *Driver) acceptRide(params datamodels.DataParams) {
 
 	d.mu.Lock()
 	if d.driverState == ready {
-		clog.File("Driver", "AcceptRide", "Driver: %d -> Ride: %s", d.id, ride.ID)
+		clog.File("Driver", "AcceptRide", "Driver: %s -> Ride: %s", d.name, ride.ID)
 		d.writeRequest(d.id, "AcceptRide", datamodels.AcceptRide{RideID: ride.ID})
 		d.driverState = waitOK
 	}
@@ -182,13 +185,13 @@ func (d *Driver) computeRideResponse(responseCode int, params datamodels.DataPar
 	d.mu.Lock()
 
 	if responseCode != 0 {
-		clog.File("Driver", "RideRejected", "Driver: %d -> Ride: %s", d.id, ride.ID)
+		clog.File("Driver", "RideRejected", "Driver: %s -> Ride: %s", d.name, ride.ID)
 		d.driverState = ready
 		return
 	}
 
 	if d.driverState == waitOK {
-		clog.File("Driver", "Ride OK", "%d -> %s", d.id, ride.ID)
+		clog.File("Driver", "Ride OK", "%s -> %s", d.name, ride.ID)
 		d.ride = ride
 		d.updateRide(datamodels.Approach)
 		d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, ride.FromAddress.Coord.Latitude, ride.FromAddress.Coord.Longitude) / 1000
@@ -197,7 +200,7 @@ func (d *Driver) computeRideResponse(responseCode int, params datamodels.DataPar
 	}
 
 	d.driverState = ready
-	clog.File("Driver", "Ride OK ERROR", "%d -> %s", d.id, ride.ID)
+	clog.File("Driver", "Ride OK ERROR", "%s -> %s", d.name, ride.ID)
 }
 
 func (d *Driver) createCourse() {
