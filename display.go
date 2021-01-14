@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bench_dispatch/tools/clog"
+	"bench_dispatch/clog"
 	"fmt"
 	"os"
 	"time"

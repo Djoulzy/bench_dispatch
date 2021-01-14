@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"bench_dispatch/gopool"
-	"bench_dispatch/tools/clog"
+	"bench_dispatch/clog"
 )
 
 type message struct {

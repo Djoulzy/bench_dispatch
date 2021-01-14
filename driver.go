@@ -10,7 +10,7 @@ import (
 
 	"bench_dispatch/datamodels"
 	"bench_dispatch/geoloc"
-	"bench_dispatch/tools/clog"
+	"bench_dispatch/clog"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"

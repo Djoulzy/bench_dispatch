@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"bench_dispatch/tools/clog"
+	"bench_dispatch/clog"
 	"github.com/go-ini/ini"
 )
 

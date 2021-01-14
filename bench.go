@@ -14,8 +14,8 @@ import (
 
 	"bench_dispatch/datamodels"
 	"bench_dispatch/gopool"
-	"bench_dispatch/tools/clog"
-	"bench_dispatch/tools/confload"
+	"bench_dispatch/clog"
+	"bench_dispatch/confload"
 
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"
