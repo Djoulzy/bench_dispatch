@@ -37,9 +37,9 @@ func output() {
 
 // DisplayHub : Affiche l'etat du Hub
 func displayHub() {
-	// hub.mu.RLock()
+	hub.mu.RLock()
 	driverList := hub.drivers
-	// hub.mu.RUnlock()
+	hub.mu.RUnlock()
 
 	var i int
 	termbox.SetCursor(1, 1)
