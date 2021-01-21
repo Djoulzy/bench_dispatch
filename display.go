@@ -3,6 +3,7 @@ package main
 import (
 	"bench_dispatch/clog"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/mattn/go-runewidth"
@@ -10,28 +11,28 @@ import (
 )
 
 func output() {
-	// err := termbox.Init()
-	// termbox.HideCursor()
+	err := termbox.Init()
+	termbox.HideCursor()
 
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	os.Exit(1)
-	// }
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
-	// go func() {
-	// 	switch ev := termbox.PollEvent(); ev.Type {
-	// 	case termbox.EventKey:
-	// 		if ev.Ch == 'q' {
-	// 			os.Exit(0)
-	// 		}
-	// 	}
-	// }()
+	go func() {
+		switch ev := termbox.PollEvent(); ev.Type {
+		case termbox.EventKey:
+			if ev.Ch == 'q' {
+				os.Exit(0)
+			}
+		}
+	}()
 
-	// for {
-	// 	displayHub()
+	for {
+		displayHub()
 
-	// 	time.Sleep(time.Second)
-	// }
+		time.Sleep(time.Second)
+	}
 }
 
 // DisplayHub : Affiche l'etat du Hub
@@ -74,7 +75,7 @@ func displayHub() {
 		zeDriver.mu.RUnlock()
 	}
 	t := time.Now()
-	tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%s", t.Format(time.RFC3339))
+	tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%s", t.Format("15:04:05"))
 
 	err := termbox.Flush()
 	if err != nil {
