@@ -37,13 +37,13 @@ type Driver struct {
 	mu          sync.RWMutex
 	conn        io.ReadWriteCloser
 	hub         *Hub
-	id          int
-	name        string
-	driverState UserState
-	coord       datamodels.Coordinates
-	dice        int
-	ride        datamodels.Ride
-	toDest      float64
+	ID          int
+	Name        string
+	DriverState UserState
+	Coord       datamodels.Coordinates
+	Dice        int
+	Ride        datamodels.Ride
+	ToDest      float64
 }
 
 ////////////////
@@ -55,12 +55,12 @@ func (d *Driver) Receive() error {
 	req, err := d.readResponse()
 
 	if err != nil {
-		clog.File("Driver", "Receive", "Driver: %s - ERROR: %v", d.name, err)
+		clog.File("Driver", "Receive", "Driver: %s - ERROR: %v", d.Name, err)
 		return err
 	}
 	if req == nil {
 		// Message vide de contôle.
-		clog.File("Driver", "Receive", "Driver: %s - Empty request", d.name)
+		clog.File("Driver", "Receive", "Driver: %s - Empty request", d.Name)
 	} else {
 		switch req.Method {
 		case "NewRide":
@@ -68,7 +68,7 @@ func (d *Driver) Receive() error {
 		case "AcceptRideResponse":
 			d.computeRideResponse(req.Status.ID, req.Params)
 		default:
-			clog.File("Driver", "Receive", "Driver: %s - RECV: Method: %s [%d] %s", d.name, req.Method, req.Status.ID, req.Status.Message)
+			clog.File("Driver", "Receive", "Driver: %s - RECV: Method: %s [%d] %s", d.Name, req.Method, req.Status.ID, req.Status.Message)
 		}
 	}
 	return nil
@@ -78,21 +78,33 @@ func (d *Driver) readResponse() (*datamodels.Response, error) {
 	d.io.Lock()
 	defer d.io.Unlock()
 
-	h, r, err := wsutil.NextReader(d.conn, ws.StateClientSide)
+	header, err := ws.ReadHeader(d.conn)
 	if err != nil {
-		// clog.Error("Driver", "readRequest::NextReader", "%s", err)
-		clog.File("Driver", "readResponse", "Driver: %s - Empty request", d.name)
-		return nil, err
+		// handle error
+		clog.Error("Driver", "readRequest | ReadHeader", "%s", err)
 	}
-	if h.OpCode.IsControl() {
-		// clog.Info("Driver", "readRequest::IsControl", "Opcode Control : %v", h)
-		return nil, wsutil.ControlFrameHandler(d.conn, ws.StateClientSide)(h, r)
+	if header.OpCode.IsControl() {
+		if header.OpCode == ws.OpClose {
+			return &datamodels.Response{ID: d.ID, Method: "close"}, nil
+		}
+		clog.Error("Driver", "readHeader", "OpCode : %v", header.OpCode)
+		// return nil, wsutil.ControlFrameHandler(d.conn, ws.StateServerSide)(h, r)
+	}
+
+	payload := make([]byte, header.Length)
+	_, err = io.ReadFull(d.conn, payload)
+	if err != nil {
+		// handle error
+		clog.Error("Driver", "readRequest | ReadFull", "%s", err)
+	}
+	if header.Masked {
+		ws.Cipher(payload, header.Mask, 0)
 	}
 
 	req := &datamodels.Response{}
-	decoder := json.NewDecoder(r)
-	if err := decoder.Decode(req); err != nil {
-		// clog.Error("Driver", "readRequest::Decode", "%s", err)
+	if err := json.Unmarshal(payload, &req); err != nil {
+		clog.Error("Driver", "readHeader", "%s", err)
+		clog.File("Driver", "readHeader", "Decode - Driver: %s -> %s", d.Name, payload)
 		return nil, err
 	}
 
@@ -143,11 +155,11 @@ func (d *Driver) write(x interface{}) error {
 
 func (d *Driver) sendCoord() {
 	params := datamodels.Coordinates{
-		Latitude:  d.coord.Latitude,
-		Longitude: d.coord.Longitude,
+		Latitude:  d.Coord.Latitude,
+		Longitude: d.Coord.Longitude,
 	}
 
-	d.writeRequest(d.id, "UpdateDriverLocation", params)
+	d.writeRequest(d.ID, "UpdateDriverLocation", params)
 }
 
 func dice(nb int) int {
@@ -156,12 +168,12 @@ func dice(nb int) int {
 
 func (d *Driver) updateRide(state datamodels.RideState) {
 	params := datamodels.RideUpdate{
-		ID:    d.ride.ID,
+		ID:    d.Ride.ID,
 		State: state,
 	}
 
-	clog.File("Driver", "updateRide", "Driver: %s ask Ride: %s -> %d", d.name, d.ride.ID, state)
-	d.writeRequest(d.id, "ChangeRideState", params)
+	clog.File("Driver", "updateRide", "Driver: %s ask Ride: %s -> %d", d.Name, d.Ride.ID, state)
+	d.writeRequest(d.ID, "ChangeRideState", params)
 }
 
 func (d *Driver) acceptRide(params datamodels.DataParams) {
@@ -169,10 +181,10 @@ func (d *Driver) acceptRide(params datamodels.DataParams) {
 	mapstructure.Decode(params, &ride)
 
 	d.mu.Lock()
-	if d.driverState == ready {
-		clog.File("Driver", "AcceptRide", "Driver: %s -> Ride: %s", d.name, ride.ID)
-		d.writeRequest(d.id, "AcceptRide", datamodels.AcceptRide{RideID: ride.ID})
-		d.driverState = waitOK
+	if d.DriverState == ready {
+		clog.File("Driver", "AcceptRide", "Driver: %s -> Ride: %s", d.Name, ride.ID)
+		d.writeRequest(d.ID, "AcceptRide", datamodels.AcceptRide{RideID: ride.ID})
+		d.DriverState = waitOK
 	}
 	d.mu.Unlock()
 }
@@ -185,22 +197,22 @@ func (d *Driver) computeRideResponse(responseCode int, params datamodels.DataPar
 	d.mu.Lock()
 
 	if responseCode != 0 {
-		clog.File("Driver", "RideRejected", "Driver: %s -> Ride: %s", d.name, ride.ID)
-		d.driverState = ready
+		clog.File("Driver", "RideRejected", "Driver: %s -> Ride: %s", d.Name, ride.ID)
+		d.DriverState = ready
 		return
 	}
 
-	if d.driverState == waitOK {
-		clog.File("Driver", "Ride OK", "%s -> %s", d.name, ride.ID)
-		d.ride = ride
+	if d.DriverState == waitOK {
+		clog.File("Driver", "Ride OK", "%s -> %s", d.Name, ride.ID)
+		d.Ride = ride
 		d.updateRide(datamodels.Approach)
-		d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, ride.FromAddress.Coord.Latitude, ride.FromAddress.Coord.Longitude) / 1000
-		d.driverState = moving
+		d.ToDest = geoloc.DistanceAccurate(d.Coord.Latitude, d.Coord.Longitude, ride.FromAddress.Coord.Latitude, ride.FromAddress.Coord.Longitude) / 1000
+		d.DriverState = moving
 		return
 	}
 
-	d.driverState = ready
-	clog.File("Driver", "Ride OK ERROR", "%s -> %s", d.name, ride.ID)
+	d.DriverState = ready
+	clog.File("Driver", "Ride OK ERROR", "%s -> %s", d.Name, ride.ID)
 }
 
 func (d *Driver) createCourse() {
@@ -223,7 +235,7 @@ func (d *Driver) createCourse() {
 	}
 
 	req := datamodels.Request{
-		ID:     d.id,
+		ID:     d.ID,
 		Method: "NewRide",
 		Params: ride,
 	}
@@ -233,10 +245,10 @@ func (d *Driver) createCourse() {
 
 func (d *Driver) login() {
 	login := datamodels.Login{
-		ID:   d.id,
-		Name: d.name,
+		ID:   d.ID,
+		Name: d.Name,
 	}
-	d.writeRequest(d.id, "Login", login)
+	d.writeRequest(d.ID, "Login", login)
 }
 
 // Life : Simulation des actions d'un Driver
@@ -256,16 +268,16 @@ func (d *Driver) Life() {
 		select {
 		case <-ticker.C:
 			d.mu.Lock()
-			switch d.driverState {
+			switch d.DriverState {
 			case idle:
 				if idleCount == 0 {
-					d.driverState = ready
+					d.DriverState = ready
 				} else {
 					idleCount--
 				}
 			case ready:
 				if dice(100) < conf.Bench.PercentForIdle {
-					d.driverState = idle
+					d.DriverState = idle
 					idleCount = conf.Bench.IdleDuration
 					sendPosCount = 0
 					if conf.Bench.IdleCreateRide {
@@ -273,21 +285,21 @@ func (d *Driver) Life() {
 					}
 				}
 			case moving:
-				d.toDest -= float64(conf.Bench.KmByBT)
-				if d.toDest <= 0 {
+				d.ToDest -= float64(conf.Bench.KmByBT)
+				if d.ToDest <= 0 {
 					d.updateRide(datamodels.PickUpPassenger)
-					d.coord = d.ride.FromAddress.Coord
-					d.toDest = geoloc.DistanceAccurate(d.coord.Latitude, d.coord.Longitude, d.ride.ToAddress.Coord.Latitude, d.ride.ToAddress.Coord.Longitude) / 1000
-					d.driverState = onRide
+					d.Coord = d.Ride.FromAddress.Coord
+					d.ToDest = geoloc.DistanceAccurate(d.Coord.Latitude, d.Coord.Longitude, d.Ride.ToAddress.Coord.Latitude, d.Ride.ToAddress.Coord.Longitude) / 1000
+					d.DriverState = onRide
 				}
 			case onRide:
-				d.toDest -= float64(conf.Bench.KmByBT)
-				if d.toDest <= 0 {
-					d.toDest = 0
+				d.ToDest -= float64(conf.Bench.KmByBT)
+				if d.ToDest <= 0 {
+					d.ToDest = 0
 					d.updateRide(datamodels.Ended)
-					d.coord = d.ride.ToAddress.Coord
-					d.ride = datamodels.Ride{}
-					d.driverState = ready
+					d.Coord = d.Ride.ToAddress.Coord
+					d.Ride = datamodels.Ride{}
+					d.DriverState = ready
 				}
 			}
 			d.mu.Unlock()
@@ -297,7 +309,7 @@ func (d *Driver) Life() {
 				sendPosCount = conf.Bench.SendPos
 			}
 			sendPosCount--
-			d.dice = dice(100)
+			d.Dice = dice(100)
 
 			// case s := <-d.in:
 			// 	d.mu.Lock()

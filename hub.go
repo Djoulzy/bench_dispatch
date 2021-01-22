@@ -40,16 +40,16 @@ func (h *Hub) Register(conn net.Conn, id int, name string) *Driver {
 	driver := &Driver{
 		hub:         h,
 		conn:        conn,
-		driverState: ready,
-		coord:       loc.Coord,
+		DriverState: ready,
+		Coord:       loc.Coord,
 	}
 	// driver.in = make(chan UserState, 1)
 
 	h.mu.Lock()
 	{
-		driver.id = id
-		driver.name = name
-		h.drivers[driver.id] = driver
+		driver.ID = id
+		driver.Name = name
+		h.drivers[driver.ID] = driver
 	}
 	h.mu.Unlock()
 
@@ -61,11 +61,11 @@ func (h *Hub) Register(conn net.Conn, id int, name string) *Driver {
 }
 
 func (h *Hub) remove(driver *Driver) bool {
-	if _, has := h.drivers[driver.id]; !has {
+	if _, has := h.drivers[driver.ID]; !has {
 		return false
 	}
 
-	delete(h.drivers, driver.id)
+	delete(h.drivers, driver.ID)
 
 	return true
 }

@@ -2,22 +2,32 @@ package main
 
 import (
 	"bench_dispatch/clog"
+	"bench_dispatch/datamodels"
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/jinzhu/copier"
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
 
-func output() {
-	err := termbox.Init()
-	termbox.HideCursor()
+type cpyDriver struct {
+	ID          int
+	Name        string
+	DriverState UserState
+	Coord       datamodels.Coordinates
+	Dice        int
+	Ride        datamodels.Ride
+	ToDest      float64
+}
 
-	if err != nil {
+func output() {
+	if err := termbox.Init(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	termbox.HideCursor()
 
 	go func() {
 		switch ev := termbox.PollEvent(); ev.Type {
@@ -30,7 +40,6 @@ func output() {
 
 	for {
 		displayHub()
-
 		time.Sleep(time.Second)
 	}
 }
@@ -38,19 +47,22 @@ func output() {
 // DisplayHub : Affiche l'etat du Hub
 func displayHub() {
 	hub.mu.RLock()
-	//	driverList := hub.drivers
+	nbDrivers := len(hub.drivers)
 	hub.mu.RUnlock()
 
 	var i int
+	var zeDriver cpyDriver
 	termbox.SetCursor(1, 1)
-	for i = 0; i < len(hub.drivers); i++ {
+	for i = 0; i < nbDrivers; i++ {
 		hub.mu.RLock()
-		zeDriver := hub.drivers[i]
+		if err := copier.Copy(&zeDriver, hub.drivers[i]); err != nil {
+			panic("Can't copy driver")
+		}
+		// fmt.Printf("%v\n", zeDriver)
 		hub.mu.RUnlock()
 
-		zeDriver.mu.RLock()
-		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%s", zeDriver.name)
-		switch zeDriver.driverState {
+		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%s", zeDriver.Name)
+		switch zeDriver.DriverState {
 		case idle:
 			tbprintf(15, i, termbox.ColorDefault, termbox.ColorDefault, "I d l e")
 		case ready:
@@ -65,14 +77,13 @@ func displayHub() {
 			tbprintf(15, i, termbox.ColorRed, termbox.ColorDefault, "-Error-")
 		default:
 		}
-		tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", zeDriver.coord.Latitude, zeDriver.coord.Longitude)
-		tbprintf(44, i, termbox.ColorDefault, termbox.ColorDefault, "%.1f Km ", zeDriver.toDest)
-		if zeDriver.ride.ToAddress.Name == "" {
+		tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", zeDriver.Coord.Latitude, zeDriver.Coord.Longitude)
+		tbprintf(44, i, termbox.ColorDefault, termbox.ColorDefault, "%.1f Km ", zeDriver.ToDest)
+		if zeDriver.Ride.ToAddress.Name == "" {
 			tbprintf(54, i, termbox.ColorDefault, termbox.ColorDefault, "                                                    ")
 		} else {
-			tbprintf(54, i, termbox.ColorDefault, termbox.ColorDefault, "%s", zeDriver.ride.ToAddress.Name)
+			tbprintf(54, i, termbox.ColorDefault, termbox.ColorDefault, "%s", zeDriver.Ride.ToAddress.Name)
 		}
-		zeDriver.mu.RUnlock()
 	}
 	t := time.Now()
 	tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%s", t.Format("15:04:05"))

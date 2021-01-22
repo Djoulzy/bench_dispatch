@@ -15,10 +15,6 @@ IdleCreateRide  = true
 PercentForIdle  = 10
 KmByBT          = 1
 
-[HTTPserver]
-Enabled         = true
-Addr            = "localhost:8080"
-
 [WSserver]
 Addr            = "localhost:8888"
 
