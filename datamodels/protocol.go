@@ -32,8 +32,10 @@ var Success = Error{
 
 // Login : Structure d'info pour le login Driver
 type Login struct {
-	ID   int
-	Name string
+	Token string      `json:"token"`
+	State DriverState `json:"state"`
+	ID    int         `json:"id"`
+	Name  string      `json:"name"`
 }
 
 // VehicleType : type de voiture du chauffeur
@@ -116,6 +118,25 @@ type Ride struct {
 type RideUpdate struct {
 	ID    string    `mapstructure:"rideId" json:"rideId"`
 	State RideState `mapstructure:"state" json:"state"`
+}
+
+// DriverState : Etat du chauffeur
+type DriverState int
+
+// Liste des etats du chauffeur
+const (
+	Free DriverState = iota
+	Occupied
+	Offline
+	Moving
+	WaitOK
+	WaitACK
+	Err
+)
+
+// DriverStateChange : Changement du status d'un Driver
+type DriverStateChange struct {
+	State DriverState `mapstructure:"state" json:"state"`
 }
 
 /*

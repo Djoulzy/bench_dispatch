@@ -4,8 +4,9 @@ import (
 	"net"
 	"sync"
 
-	"bench_dispatch/gopool"
 	"bench_dispatch/clog"
+	"bench_dispatch/datamodels"
+	"bench_dispatch/gopool"
 )
 
 type message struct {
@@ -40,7 +41,7 @@ func (h *Hub) Register(conn net.Conn, id int, name string) *Driver {
 	driver := &Driver{
 		hub:         h,
 		conn:        conn,
-		DriverState: ready,
+		DriverState: datamodels.Offline,
 		Coord:       loc.Coord,
 	}
 	// driver.in = make(chan UserState, 1)

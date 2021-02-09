@@ -8,26 +8,14 @@ import (
 	"sync"
 	"time"
 
+	"bench_dispatch/clog"
 	"bench_dispatch/datamodels"
 	"bench_dispatch/geoloc"
-	"bench_dispatch/clog"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rs/xid"
-)
-
-// UserState : Etat d'un Driver
-type UserState int
-
-const (
-	idle UserState = iota
-	ready
-	waitOK
-	moving
-	onRide
-	err
 )
 
 // Driver : Représente une connexion avec une voiture / taxi
@@ -39,9 +27,8 @@ type Driver struct {
 	hub         *Hub
 	ID          int
 	Name        string
-	DriverState UserState
+	DriverState datamodels.DriverState
 	Coord       datamodels.Coordinates
-	Dice        int
 	Ride        datamodels.Ride
 	ToDest      float64
 }
@@ -63,10 +50,14 @@ func (d *Driver) Receive() error {
 		clog.File("Driver", "Receive", "Driver: %s - Empty request", d.Name)
 	} else {
 		switch req.Method {
+		case "LoginResponse":
+			d.computeLoginResponse(req.Status.ID, req.Params)
 		case "NewRide":
-			d.acceptRide(req.Params)
+			d.requestRide(req.Params)
 		case "AcceptRideResponse":
 			d.computeRideResponse(req.Status.ID, req.Params)
+		case "ChangeTaximeterStateReponse":
+			d.computeChangeState(req.Status.ID, req.Params)
 		default:
 			clog.File("Driver", "Receive", "Driver: %s - RECV: Method: %s [%d] %s", d.Name, req.Method, req.Status.ID, req.Status.Message)
 		}
@@ -176,15 +167,15 @@ func (d *Driver) updateRide(state datamodels.RideState) {
 	d.writeRequest(d.ID, "ChangeRideState", params)
 }
 
-func (d *Driver) acceptRide(params datamodels.DataParams) {
+func (d *Driver) requestRide(params datamodels.DataParams) {
 	var ride datamodels.Ride
 	mapstructure.Decode(params, &ride)
 
 	d.mu.Lock()
-	if d.DriverState == ready {
+	if d.DriverState == datamodels.Free {
 		clog.File("Driver", "AcceptRide", "Driver: %s -> Ride: %s", d.Name, ride.ID)
 		d.writeRequest(d.ID, "AcceptRide", datamodels.AcceptRide{RideID: ride.ID})
-		d.DriverState = waitOK
+		d.DriverState = datamodels.WaitOK
 	}
 	d.mu.Unlock()
 }
@@ -198,21 +189,37 @@ func (d *Driver) computeRideResponse(responseCode int, params datamodels.DataPar
 
 	if responseCode != 0 {
 		clog.File("Driver", "RideRejected", "Driver: %s -> Ride: %s", d.Name, ride.ID)
-		d.DriverState = ready
+		d.DriverState = datamodels.Free
 		return
 	}
 
-	if d.DriverState == waitOK {
+	if d.DriverState == datamodels.WaitOK {
 		clog.File("Driver", "Ride OK", "%s -> %s", d.Name, ride.ID)
 		d.Ride = ride
 		d.updateRide(datamodels.Approach)
 		d.ToDest = geoloc.DistanceAccurate(d.Coord.Latitude, d.Coord.Longitude, ride.FromAddress.Coord.Latitude, ride.FromAddress.Coord.Longitude) / 1000
-		d.DriverState = moving
+		d.DriverState = datamodels.Moving
 		return
 	}
 
-	d.DriverState = ready
+	d.DriverState = datamodels.Free
 	clog.File("Driver", "Ride OK ERROR", "%s -> %s", d.Name, ride.ID)
+}
+
+func (d *Driver) requestChangeState(newState datamodels.DriverState) {
+	state := datamodels.DriverStateChange{
+		State: newState,
+	}
+	d.writeRequest(d.ID, "ChangeTaximeterState", state)
+}
+
+func (d *Driver) computeChangeState(responseCode int, params datamodels.DataParams) {
+	var newState datamodels.DriverStateChange
+	mapstructure.Decode(params, &newState)
+
+	d.mu.Lock()
+	d.DriverState = newState.State
+	d.mu.Unlock()
 }
 
 func (d *Driver) createCourse() {
@@ -245,10 +252,15 @@ func (d *Driver) createCourse() {
 
 func (d *Driver) login() {
 	login := datamodels.Login{
-		ID:   d.ID,
-		Name: d.Name,
+		ID:    d.ID,
+		Name:  d.Name,
+		State: d.DriverState,
 	}
 	d.writeRequest(d.ID, "Login", login)
+}
+
+func (d *Driver) computeLoginResponse(responseCode int, params datamodels.DataParams) {
+	d.requestChangeState(datamodels.Free)
 }
 
 // Life : Simulation des actions d'un Driver
@@ -269,38 +281,43 @@ func (d *Driver) Life() {
 		case <-ticker.C:
 			d.mu.Lock()
 			switch d.DriverState {
-			case idle:
+			case datamodels.Offline:
 				if idleCount == 0 {
-					d.DriverState = ready
+					d.DriverState = datamodels.WaitACK
+					d.requestChangeState(datamodels.Free)
 				} else {
 					idleCount--
 				}
-			case ready:
+			case datamodels.Free:
 				if dice(100) < conf.Bench.PercentForIdle {
-					d.DriverState = idle
+					d.DriverState = datamodels.WaitACK
+					d.requestChangeState(datamodels.Offline)
 					idleCount = conf.Bench.IdleDuration
 					sendPosCount = 0
 					if conf.Bench.IdleCreateRide {
 						d.createCourse()
 					}
 				}
-			case moving:
+			case datamodels.Moving:
 				d.ToDest -= float64(conf.Bench.KmByBT)
 				if d.ToDest <= 0 {
+					d.DriverState = datamodels.WaitACK
+					d.requestChangeState(datamodels.Occupied)
 					d.updateRide(datamodels.PickUpPassenger)
 					d.Coord = d.Ride.FromAddress.Coord
 					d.ToDest = geoloc.DistanceAccurate(d.Coord.Latitude, d.Coord.Longitude, d.Ride.ToAddress.Coord.Latitude, d.Ride.ToAddress.Coord.Longitude) / 1000
-					d.DriverState = onRide
 				}
-			case onRide:
+			case datamodels.Occupied:
 				d.ToDest -= float64(conf.Bench.KmByBT)
 				if d.ToDest <= 0 {
-					d.ToDest = 0
+					d.DriverState = datamodels.WaitACK
+					d.requestChangeState(datamodels.Free)
 					d.updateRide(datamodels.Ended)
+					d.ToDest = 0
 					d.Coord = d.Ride.ToAddress.Coord
 					d.Ride = datamodels.Ride{}
-					d.DriverState = ready
 				}
+			case datamodels.WaitACK:
 			}
 			d.mu.Unlock()
 
@@ -309,7 +326,6 @@ func (d *Driver) Life() {
 				sendPosCount = conf.Bench.SendPos
 			}
 			sendPosCount--
-			d.Dice = dice(100)
 
 			// case s := <-d.in:
 			// 	d.mu.Lock()

@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/jinzhu/copier"
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
@@ -15,7 +14,7 @@ import (
 type cpyDriver struct {
 	ID          int
 	Name        string
-	DriverState UserState
+	DriverState datamodels.DriverState
 	Coord       datamodels.Coordinates
 	Dice        int
 	Ride        datamodels.Ride
@@ -51,42 +50,42 @@ func displayHub() {
 	hub.mu.RUnlock()
 
 	var i int
-	var zeDriver cpyDriver
 	termbox.SetCursor(1, 1)
 	for i = 0; i < nbDrivers; i++ {
 		hub.mu.RLock()
-		if err := copier.Copy(&zeDriver, hub.drivers[i]); err != nil {
-			panic("Can't copy driver")
-		}
-		// fmt.Printf("%v\n", zeDriver)
+		zeDriver := hub.drivers[i]
 		hub.mu.RUnlock()
 
+		zeDriver.mu.Lock()
 		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%s", zeDriver.Name)
 		switch zeDriver.DriverState {
-		case idle:
-			tbprintf(15, i, termbox.ColorDefault, termbox.ColorDefault, "I d l e")
-		case ready:
-			tbprintf(15, i, termbox.ColorGreen, termbox.ColorDefault, " Ready ")
-		case waitOK:
-			tbprintf(15, i, termbox.ColorBlack, termbox.ColorCyan, "Wait OK")
-		case moving:
-			tbprintf(15, i, termbox.ColorBlack, termbox.ColorGreen, "Approch")
-		case onRide:
-			tbprintf(15, i, termbox.ColorBlack, termbox.ColorYellow, "On Ride")
-		case err:
-			tbprintf(15, i, termbox.ColorRed, termbox.ColorDefault, "-Error-")
+		case datamodels.Offline:
+			tbprintf(15, i, termbox.ColorDefault, termbox.ColorDefault, "Offline ")
+		case datamodels.Free:
+			tbprintf(15, i, termbox.ColorGreen, termbox.ColorDefault, " Ready  ")
+		case datamodels.WaitOK:
+			tbprintf(15, i, termbox.ColorBlack, termbox.ColorCyan, "Wait OK ")
+		case datamodels.Moving:
+			tbprintf(15, i, termbox.ColorBlack, termbox.ColorGreen, "Approch ")
+		case datamodels.Occupied:
+			tbprintf(15, i, termbox.ColorBlack, termbox.ColorYellow, "Occupied")
+		case datamodels.Err:
+			tbprintf(15, i, termbox.ColorRed, termbox.ColorDefault, "-Error- ")
+		case datamodels.WaitACK:
+			tbprintf(15, i, termbox.ColorRed, termbox.ColorBlack, "Wait ACK")
 		default:
 		}
-		tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", zeDriver.Coord.Latitude, zeDriver.Coord.Longitude)
-		tbprintf(44, i, termbox.ColorDefault, termbox.ColorDefault, "%.1f Km ", zeDriver.ToDest)
+		tbprintf(26, i, termbox.ColorDefault, termbox.ColorDefault, "%f %f", zeDriver.Coord.Latitude, zeDriver.Coord.Longitude)
+		tbprintf(46, i, termbox.ColorDefault, termbox.ColorDefault, "%.1f Km ", zeDriver.ToDest)
 		if zeDriver.Ride.ToAddress.Name == "" {
-			tbprintf(54, i, termbox.ColorDefault, termbox.ColorDefault, "                                                    ")
+			tbprintf(55, i, termbox.ColorDefault, termbox.ColorDefault, "                                                    ")
 		} else {
-			tbprintf(54, i, termbox.ColorDefault, termbox.ColorDefault, "%s", zeDriver.Ride.ToAddress.Name)
+			tbprintf(55, i, termbox.ColorDefault, termbox.ColorDefault, "%s", zeDriver.Ride.ToAddress.Name)
 		}
+		zeDriver.mu.Unlock()
 	}
 	t := time.Now()
-	tbprintf(25, i, termbox.ColorDefault, termbox.ColorDefault, "%s", t.Format("15:04:05"))
+	tbprintf(28, i, termbox.ColorDefault, termbox.ColorDefault, "%s", t.Format("15:04:05"))
 
 	err := termbox.Flush()
 	if err != nil {
