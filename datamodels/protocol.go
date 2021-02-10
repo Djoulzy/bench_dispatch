@@ -103,9 +103,9 @@ const (
 
 // Ride : modele de donnée pour une course
 type Ride struct {
-	ID          int64
+	ID          int64        `mapstructure:"id" json:"id"`
 	Origin      RideFlowType `mapstructure:"origin" json:"origin"`
-	ExternalID  string       `mapstructure:"id" json:"id"`
+	ExternalID  string       `mapstructure:"externalId" json:"externalId"`
 	Date        string       `mapstructure:"date" json:"date"`
 	State       RideState    `mapstructure:"state" json:"state"`
 	ToAddress   Address      `mapstructure:"toAddress" json:"toAddress"`
