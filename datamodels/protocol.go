@@ -128,6 +128,7 @@ const (
 	Free DriverState = iota
 	Occupied
 	Offline
+   
 	Moving
 	WaitOK
 	WaitACK
