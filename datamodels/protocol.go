@@ -39,16 +39,16 @@ type Login struct {
 }
 
 // VehicleType : type de voiture du chauffeur
-type VehicleType string
+type VehicleType int
 
 // Vehicule type list
 const (
-	Green    VehicleType = "GREEN"
-	Berline  VehicleType = "BERLINE"
-	Van      VehicleType = "VAN"
-	Prestige VehicleType = "PRESTIGE"
-	Medical  VehicleType = "MEDICAL"
-	Other    VehicleType = "OTHER"
+	Berline VehicleType = iota + 1
+	Green
+	Medical
+	Other
+	Prestige
+	Van
 )
 
 // RideFlowType : Provenace de la demande
@@ -81,7 +81,7 @@ type OptionsRide struct {
 
 // AcceptRide : Message du chauffeur pour accepter la course
 type AcceptRide struct {
-	RideID string `mapstructure:"rideId" json:"rideId"`
+	ID int64 `mapstructure:"rideId" json:"rideId"`
 }
 
 // RideState : Status d'une course
@@ -89,7 +89,7 @@ type RideState int
 
 // Etats des course
 const (
-	Pending RideState = iota
+	Pending RideState = iota + 1
 	Booked
 	Started
 	Approach
@@ -103,8 +103,9 @@ const (
 
 // Ride : modele de donnée pour une course
 type Ride struct {
+	ID          int64
 	Origin      RideFlowType `mapstructure:"origin" json:"origin"`
-	ID          string       `mapstructure:"id" json:"id"`
+	ExternalID  string       `mapstructure:"id" json:"id"`
 	Date        string       `mapstructure:"date" json:"date"`
 	State       RideState    `mapstructure:"state" json:"state"`
 	ToAddress   Address      `mapstructure:"toAddress" json:"toAddress"`
@@ -116,7 +117,7 @@ type Ride struct {
 
 // RideUpdate : Modifie l'état de la course
 type RideUpdate struct {
-	ID    string    `mapstructure:"rideId" json:"rideId"`
+	ID    int64     `mapstructure:"rideId" json:"rideId"`
 	State RideState `mapstructure:"state" json:"state"`
 }
 
@@ -128,7 +129,7 @@ const (
 	Free DriverState = iota
 	Occupied
 	Offline
-   
+
 	Moving
 	WaitOK
 	WaitACK

@@ -174,7 +174,7 @@ func (d *Driver) requestRide(params datamodels.DataParams) {
 	d.mu.Lock()
 	if d.DriverState == datamodels.Free {
 		clog.File("Driver", "AcceptRide", "Driver: %s -> Ride: %s", d.Name, ride.ID)
-		d.writeRequest(d.ID, "AcceptRide", datamodels.AcceptRide{RideID: ride.ID})
+		d.writeRequest(d.ID, "AcceptRide", datamodels.AcceptRide{ID: ride.ID})
 		d.DriverState = datamodels.WaitOK
 	}
 	d.mu.Unlock()
@@ -223,13 +223,11 @@ func (d *Driver) computeChangeState(responseCode int, params datamodels.DataPara
 }
 
 func (d *Driver) createCourse() {
-	now := time.Now()
-
 	ride := datamodels.Ride{
+		ExternalID:  xid.New().String(),
 		Origin:      datamodels.Defaut,
-		ID:          xid.New().String(),
-		Date:        now.Format(time.RFC3339),
-		ValidUntil:  now.Format(time.RFC3339),
+		Date:        time.Now().Format(time.RFC3339),
+		ValidUntil:  time.Now().Format(time.RFC3339),
 		State:       datamodels.Pending,
 		IsImmediate: true,
 		FromAddress: getNewAdress(),
