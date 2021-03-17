@@ -24,12 +24,6 @@ type Error struct {
 	Message string `json:"errorMessage"`
 }
 
-// Success : Simplification d'ecriture en cas de succes
-var Success = Error{
-	ID:      0,
-	Message: "OK",
-}
-
 // Login : Structure d'info pour le login Driver
 type Login struct {
 	Token string      `json:"token"`
@@ -60,6 +54,15 @@ const (
 	LeTaxi
 )
 
+// Passenger : Détails du passager
+type Passenger struct {
+	ID        int    `mapstructure:"id" json:"id"`
+	Picture   string `mapstructure:"picture" json:"picture"`
+	Phone     string `mapstructure:"phone" json:"phone"`
+	Firstname string `mapstructure:"firstname" json:"firstname"`
+	Lastname  string `mapstructure:"lastname" json:"lastname"`
+}
+
 // Coordinates : geolocalisation
 type Coordinates struct {
 	Longitude float64 `mapstructure:"longitude" json:"longitude"`
@@ -82,6 +85,14 @@ type OptionsRide struct {
 // AcceptRide : Message du chauffeur pour accepter la course
 type AcceptRide struct {
 	ID int64 `mapstructure:"rideId" json:"rideId"`
+}
+
+// AcceptRideResponse : Retour pour course acceptée
+type AcceptRideResponse struct {
+	Memo      string    `mapstructure:"memo" json:"memo"`
+	Reference string    `mapstructure:"reference" json:"reference"`
+	Ride      Ride     `mapstructure:"ride" json:"ride"`
+	Passenger Passenger `mapstructure:"passenger" json:"passenger"`
 }
 
 // RideState : Status d'une course
@@ -133,6 +144,7 @@ const (
 	Moving
 	WaitOK
 	WaitACK
+   Payment
 	Err
 )
 
