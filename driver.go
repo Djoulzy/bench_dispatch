@@ -42,12 +42,12 @@ func (d *Driver) Receive() error {
 	req, err := d.readResponse()
 
 	if err != nil {
-		clog.File("RCVE", d.Name, "ERROR: %v", err)
+		clog.File("R-ERR", d.Name, "ERROR: %v", err)
 		return err
 	}
 	if req == nil {
 		// Message vide de contôle.
-		clog.File("RCVE", d.Name, "Empty request", )
+		clog.File("R-ERR", d.Name, "Empty request")
 	} else {
 		switch req.Method {
 		case "LoginResponse":
@@ -57,12 +57,13 @@ func (d *Driver) Receive() error {
 		case "AcceptRideResponse":
 			d.computeAcceptRideResponse(req.Status.ID, req.Params)
 		case "ChangeRideStateResponse":
+			d.computeChangeRideStateResponse(req.Status.ID, req.Params)
 		case "ChangeTaximeterStateReponse":
-			d.computeChangeState(req.Status.ID, req.Params)
+			d.computeChangeTaximeterStateReponse(req.Status.ID, req.Params)
 		case "PendingPaymentResponse":
-			d.computePayment(req.Status.ID, req.Params)
+			d.computePaymentResponse(req.Status.ID, req.Params)
 		default:
-			clog.File("RCVE", d.Name, "Erreur Method: %s [code: %d] %s", req.Method, req.Status.ID, req.Status.Message)
+			clog.File("R-ERR", d.Name, "Erreur Method: %s [code: %d] %s", req.Method, req.Status.ID, req.Status.Message)
 		}
 	}
 	return nil
@@ -98,7 +99,7 @@ func (d *Driver) readResponse() (*datamodels.Response, error) {
 	req := &datamodels.Response{}
 	if err := json.Unmarshal(payload, &req); err != nil {
 		clog.Error("Driver", "readHeader", "%s", err)
-		clog.File("RCVE", d.Name, "Erreur Decode  -> %s", payload)
+		clog.File("R-ERR", d.Name, "Erreur Decode  -> %s", payload)
 		return nil, err
 	}
 
@@ -160,16 +161,37 @@ func dice(nb int) int {
 	return rand.Intn(nb) + 1
 }
 
+/////////////////////////////////
+// ChangeRideState
+/////////////////////////////////
+
 func (d *Driver) updateRide(state datamodels.RideState) {
 	params := datamodels.RideUpdate{
 		ID:    d.Ride.ID,
 		State: state,
 	}
 
-	clog.File("SEND", d.Name, "updateRide %d set %d", d.Ride.ID, state)
+	clog.File("SEND", d.Name, "Ask updateRide %d set %d", d.Ride.ID, state)
 	d.writeRequest(d.ID, "ChangeRideState", params)
 }
 
+func (d *Driver) computeChangeRideStateResponse(responseCode int, params datamodels.DataParams) {
+	var rideState datamodels.RideUpdate
+	mapstructure.Decode(params, &rideState)
+
+	if responseCode != 0 {
+		clog.File("R-ERR", d.Name, "Error can't change ride: %d state for %d [code: %d]", rideState.ID, rideState.State, responseCode)
+		return
+	}
+	d.mu.Lock()
+	d.Ride.State = rideState.State
+	clog.File("RCVE", d.Name, "Change ride: %d state for %d", rideState.ID, rideState.State)
+	d.mu.Unlock()
+}
+
+/////////////////////////////////
+// AcceptRide
+/////////////////////////////////
 func (d *Driver) requestRide(params datamodels.DataParams) {
 	var ride datamodels.Ride
 	mapstructure.Decode(params, &ride)
@@ -206,17 +228,21 @@ func (d *Driver) computeAcceptRideResponse(responseCode int, params datamodels.D
 	}
 
 	d.DriverState = datamodels.Free
-	clog.File("RCVE", d.Name, "%s -> %d", rideResp.Ride.ID)
+	clog.File("R-ERR", d.Name, "Driver not free for ride %d", rideResp.Ride.ID)
 }
 
-func (d *Driver) requestChangeState(newState datamodels.DriverState) {
+/////////////////////////////////
+// ChangeTaximeterState
+/////////////////////////////////
+
+func (d *Driver) requestDriverChangeState(newState datamodels.DriverState) {
 	state := datamodels.DriverStateChange{
 		State: newState,
 	}
 	d.writeRequest(d.ID, "ChangeTaximeterState", state)
 }
 
-func (d *Driver) computeChangeState(responseCode int, params datamodels.DataParams) {
+func (d *Driver) computeChangeTaximeterStateReponse(responseCode int, params datamodels.DataParams) {
 	var newState datamodels.DriverStateChange
 	mapstructure.Decode(params, &newState)
 
@@ -225,11 +251,28 @@ func (d *Driver) computeChangeState(responseCode int, params datamodels.DataPara
 	d.mu.Unlock()
 }
 
-func (d *Driver) computePayment(responseCode int, params datamodels.DataParams) {
+/////////////////////////////////
+// PendingPayment
+/////////////////////////////////
+
+func (d *Driver) computePaymentResponse(responseCode int, params datamodels.DataParams) {
+	var rideState datamodels.PaymentResponse
+	mapstructure.Decode(params, &rideState)
+
+	if responseCode != 0 {
+		clog.File("R-ERR", d.Name, "Error can't Init Payment for ride: %d with %d [code: %d]", rideState.Ride.ID, rideState.Ride.State, responseCode)
+		return
+	}
 	d.mu.Lock()
+	d.Ride.State = rideState.Ride.State
+	clog.File("RCVE", d.Name, "Init Payement for ride: %d state for %d", rideState.Ride.ID, rideState.Ride.State)
 	d.DriverState = datamodels.Payment
 	d.mu.Unlock()
 }
+
+/////////////////////////////////
+// NewCourse
+/////////////////////////////////
 
 func (d *Driver) createCourse() {
 	ride := datamodels.Ride{
@@ -267,7 +310,7 @@ func (d *Driver) login() {
 }
 
 func (d *Driver) computeLoginResponse(responseCode int, params datamodels.DataParams) {
-	d.requestChangeState(datamodels.Free)
+	d.requestDriverChangeState(datamodels.Free)
 }
 
 // Life : Simulation des actions d'un Driver
@@ -291,14 +334,14 @@ func (d *Driver) Life() {
 			case datamodels.Offline:
 				if idleCount == 0 {
 					d.DriverState = datamodels.WaitACK
-					d.requestChangeState(datamodels.Free)
+					d.requestDriverChangeState(datamodels.Free)
 				} else {
 					idleCount--
 				}
 			case datamodels.Free:
 				if dice(100) < conf.Bench.PercentForIdle {
 					d.DriverState = datamodels.WaitACK
-					d.requestChangeState(datamodels.Offline)
+					d.requestDriverChangeState(datamodels.Offline)
 					idleCount = conf.Bench.IdleDuration
 					sendPosCount = 0
 					if conf.Bench.IdleCreateRide {
@@ -309,7 +352,7 @@ func (d *Driver) Life() {
 				d.ToDest -= float64(conf.Bench.KmByBT)
 				if d.ToDest <= 0 {
 					d.DriverState = datamodels.WaitACK
-					d.requestChangeState(datamodels.Occupied)
+					d.requestDriverChangeState(datamodels.Occupied)
 					d.updateRide(datamodels.PickUpPassenger)
 					d.Coord = d.Ride.FromAddress.Coord
 					d.ToDest = geoloc.DistanceAccurate(d.Coord.Latitude, d.Coord.Longitude, d.Ride.ToAddress.Coord.Latitude, d.Ride.ToAddress.Coord.Longitude) / 1000
@@ -317,12 +360,13 @@ func (d *Driver) Life() {
 			case datamodels.Occupied:
 				d.ToDest -= float64(conf.Bench.KmByBT)
 				if d.ToDest <= 0 {
+					d.DriverState = datamodels.WaitACK
 					d.updateRide(datamodels.PendingPayment)
 					d.ToDest = 0
 				}
 			case datamodels.Payment:
 				d.DriverState = datamodels.WaitACK
-				d.requestChangeState(datamodels.Free)
+				d.requestDriverChangeState(datamodels.Free)
 				d.updateRide(datamodels.Ended)
 				d.Coord = d.Ride.ToAddress.Coord
 				d.Ride = datamodels.Ride{}

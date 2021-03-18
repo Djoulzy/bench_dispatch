@@ -91,7 +91,7 @@ type AcceptRide struct {
 type AcceptRideResponse struct {
 	Memo      string    `mapstructure:"memo" json:"memo"`
 	Reference string    `mapstructure:"reference" json:"reference"`
-	Ride      Ride     `mapstructure:"ride" json:"ride"`
+	Ride      Ride      `mapstructure:"ride" json:"ride"`
 	Passenger Passenger `mapstructure:"passenger" json:"passenger"`
 }
 
@@ -144,13 +144,28 @@ const (
 	Moving
 	WaitOK
 	WaitACK
-   Payment
+	Payment
 	Err
 )
 
 // DriverStateChange : Changement du status d'un Driver
 type DriverStateChange struct {
 	State DriverState `mapstructure:"state" json:"state"`
+}
+
+// RideStats : Détails de la course pour payement
+type RideStats struct {
+	Value            float32 `mapstructure:"value" json:"value"`
+	Unit             string  `mapstructure:"unit" json:"unit"`
+	AdditionnalValue float32 `mapstructure:"additionnalValue" json:"additionnalValue"`
+	Type             int     `mapstructure:"type" json:"type"`
+}
+
+// Payment : Payement d'une course
+type PaymentResponse struct {
+	Ride          Ride        `mapstructure:"ride" json:"ride"`
+	PickUpAddress Address     `mapstructure:"pickUpAddress" json:"pickUpAddress"`
+	Stats         []RideStats `mapstructure:"stats" json:"stats"`
 }
 
 /*
