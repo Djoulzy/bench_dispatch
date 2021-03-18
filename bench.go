@@ -12,10 +12,10 @@ import (
 	"strconv"
 	"time"
 
-	"bench_dispatch/datamodels"
-	"bench_dispatch/gopool"
 	"bench_dispatch/clog"
 	"bench_dispatch/confload"
+	"bench_dispatch/datamodels"
+	"bench_dispatch/gopool"
 
 	"github.com/gobwas/ws"
 	"github.com/mailru/easygo/netpoll"

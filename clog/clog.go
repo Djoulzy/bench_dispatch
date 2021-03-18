@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 // LogLevel : Niveau de log
@@ -167,7 +168,7 @@ func File(pack string, function string, str string, vars ...interface{}) {
 	if StartLogging == false || logToFile == false {
 		return
 	}
-	before := fmt.Sprintf("%s|%s| %s\n", pack, function, str)
+	before := fmt.Sprintf("%s|%s|%s| %s\n", time.Now().Format("15:04:05"), pack, function, str)
 	fileDesc.Write([]byte(fmt.Sprintf(before, vars...)))
 }
 
