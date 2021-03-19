@@ -128,8 +128,7 @@ func (d *Driver) writeRequest(method string, req datamodels.DataParams) error {
 		Params: req,
 	}
 
-	clog.File("SEND", d.Name, "%d | %s", d.reqID, method)
-	return d.write(request)
+	return d.write(request, d.reqID, method)
 }
 
 func (d *Driver) writeRaw(p []byte) error {
@@ -141,7 +140,7 @@ func (d *Driver) writeRaw(p []byte) error {
 	return err
 }
 
-func (d *Driver) write(x interface{}) error {
+func (d *Driver) write(x interface{}, id int, met string) error {
 	w := wsutil.NewWriter(d.conn, ws.StateClientSide, ws.OpText)
 	encoder := json.NewEncoder(w)
 
@@ -151,7 +150,7 @@ func (d *Driver) write(x interface{}) error {
 	if err := encoder.Encode(x); err != nil {
 		return err
 	}
-
+	clog.File("SEND", d.Name, "%d | %s", id, met)
 	return w.Flush()
 }
 
@@ -284,7 +283,7 @@ func (d *Driver) computePaymentResponse(responseCode int, params datamodels.Data
 // NewCourse
 /////////////////////////////////
 
-func (d *Driver) createCourse() {
+func (d *Driver) createRide() {
 	ride := datamodels.Ride{
 		ExternalID:  xid.New().String(),
 		Origin:      datamodels.Defaut,
@@ -303,11 +302,11 @@ func (d *Driver) createCourse() {
 
 	req := datamodels.Request{
 		ID:     d.ID,
-		Method: "NewRide",
+		Method: "CreateRide",
 		Params: ride,
 	}
 
-	d.write(req)
+	d.write(req, d.ID, "CreateRide")
 }
 
 func (d *Driver) login() {
@@ -351,7 +350,7 @@ func (d *Driver) Life() {
 			case datamodels.Free:
 				if dice(100) < conf.Bench.PercentForIdle {
 					if conf.Bench.IdleCreateRide {
-						d.createCourse()
+						d.createRide()
 					}
 					d.requestDriverChangeState(datamodels.Offline)
 					idleCount = conf.Bench.IdleDuration

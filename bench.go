@@ -144,6 +144,7 @@ func main() {
 		// On ajoute un listener sur la connection
 		poller.Start(desc, func(ev netpoll.Event) {
 			if ev&(netpoll.EventReadHup|netpoll.EventHup) != 0 {
+				clog.File("POLLR", "ERROR", "%v", ev)
 				// Connexion perdue ou terminée par le client
 				poller.Stop(desc)
 				hub.Remove(driver)
@@ -151,8 +152,10 @@ func main() {
 			}
 			// Nouveau message entrant
 			pool.Schedule(func() {
+				clog.File("POLLR", driver.Name, "Msg IN")
 				if err := driver.Receive(); err != nil {
 					// Pb de reception, la connexion est rompue
+					clog.File("R-ERR", driver.Name, "%s", err)
 					poller.Stop(desc)
 					hub.Remove(driver)
 				}
