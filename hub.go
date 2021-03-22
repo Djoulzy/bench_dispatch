@@ -9,18 +9,12 @@ import (
 	"bench_dispatch/gopool"
 )
 
-type message struct {
-	userType int
-	content  []byte
-}
-
 // Hub :
 type Hub struct {
 	mu      sync.RWMutex
 	drivers map[int]*Driver
 
 	pool *gopool.Pool
-	out  chan message // Channel de sortie
 }
 
 // NewHub : Creation du Hub de Driver
@@ -74,10 +68,6 @@ func (h *Hub) remove(driver *Driver) bool {
 // Remove : Supprime un driver / fin de comm
 func (h *Hub) Remove(driver *Driver) {
 	h.mu.Lock()
-	removed := h.remove(driver)
+	h.remove(driver)
 	h.mu.Unlock()
-
-	if !removed {
-		return
-	}
 }

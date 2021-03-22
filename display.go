@@ -11,16 +11,6 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-type cpyDriver struct {
-	ID          int
-	Name        string
-	DriverState datamodels.DriverState
-	Coord       datamodels.Coordinates
-	Dice        int
-	Ride        datamodels.Ride
-	ToDest      float64
-}
-
 func output() {
 	if err := termbox.Init(); err != nil {
 		fmt.Println(err)

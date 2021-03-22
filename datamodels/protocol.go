@@ -34,6 +34,7 @@ type Login struct {
 
 // VehicleType : type de voiture du chauffeur
 type VehicleType int
+type VehicleOption int
 
 // Vehicule type list
 const (
@@ -44,6 +45,20 @@ const (
 	Prestige
 	Van
 )
+
+// Option du vehicule
+const (
+	covidShield VehicleOption = iota + 1
+	englishSpoken
+	mkids1
+	mkids2
+	mkids3
+	mkids4
+	pets
+	access
+)
+
+type VehicleOptions []VehicleOption
 
 // RideFlowType : Provenace de la demande
 type RideFlowType int
@@ -73,13 +88,6 @@ type Coordinates struct {
 type Address struct {
 	Name  string      `mapstructure:"address" json:"address"`
 	Coord Coordinates `mapstructure:"coordinates" json:"coordinates"`
-}
-
-// OptionsRide : Options à ajouter à la course
-type OptionsRide struct {
-	Luggages   int         `mapstructure:"numberOfLuggages" json:"numberOfLuggages"`
-	Passengers int         `mapstructure:"numberOfPassengers" json:"numberOfPassengers"`
-	Vehicle    VehicleType `mapstructure:"vehicleType" json:"vehicleType"`
 }
 
 // AcceptRide : Message du chauffeur pour accepter la course
@@ -114,16 +122,18 @@ const (
 
 // Ride : modele de donnée pour une course
 type Ride struct {
-	ID          int64        `mapstructure:"id" json:"id"`
-	Origin      RideFlowType `mapstructure:"origin" json:"origin"`
-	ExternalID  string       `mapstructure:"externalId" json:"externalId"`
-	Date        string       `mapstructure:"date" json:"date"`
-	State       RideState    `mapstructure:"state" json:"state"`
-	ToAddress   Address      `mapstructure:"toAddress" json:"toAddress"`
-	ValidUntil  string       `mapstructure:"validUntil" json:"validUntil"`
-	IsImmediate bool         `mapstructure:"isImmediate" json:"isImmediate"`
-	FromAddress Address      `mapstructure:"fromAddress" json:"fromAddress"`
-	Options     OptionsRide  `mapstructure:"options" json:"options"`
+	ID             int64        `mapstructure:"id" json:"id"`
+	Origin         RideFlowType `mapstructure:"origin" json:"origin"`
+	ExternalID     string       `mapstructure:"externalId" json:"externalId"`
+	StartDate      string       `mapstructure:"date" json:"startDate"`
+	State          RideState    `mapstructure:"state" json:"state"`
+	ToAddress      Address      `mapstructure:"toAddress" json:"toAddress"`
+	ValidUntil     string       `mapstructure:"validUntil" json:"validUntil"`
+	IsImmediate    bool         `mapstructure:"isImmediate" json:"isImmediate"`
+	FromAddress    Address      `mapstructure:"fromAddress" json:"fromAddress"`
+	Luggages       int          `mapstructure:"numberOfLuggages" json:"numberOfLuggages"`
+	Passengers     int          `mapstructure:"numberOfPassengers" json:"numberOfPassengers"`
+	VehicleOptions `mapstructure:"vehicleOptions" json:"vehicleOptions"`
 }
 
 // RideUpdate : Modifie l'état de la course
