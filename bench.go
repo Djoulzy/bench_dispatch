@@ -137,7 +137,8 @@ func main() {
 	for i := 0; i < conf.Bench.NbDrivers; i++ {
 		newCon := connect(i, u)
 		safeConn := Deadliner{newCon, ioTimeout}
-		driver := hub.Register(safeConn, i, getName(i))
+		driverID := rand.Intn(65535)
+		driver := hub.Register(safeConn, driverID, getName(i))
 
 		desc := netpoll.Must(netpoll.HandleRead(newCon))
 

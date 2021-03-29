@@ -30,7 +30,7 @@ type Driver struct {
 	Name        string
 	DriverState datamodels.DriverState
 	Coord       datamodels.Coordinates
-	Ride        datamodels.Ride
+	Ride        datamodels.RideData
 	ToDest      float64
 
 	reqID int
@@ -177,7 +177,7 @@ func dice(nb int) int {
 /////////////////////////////////
 
 func (d *Driver) updateRide(state datamodels.RideState) {
-	params := datamodels.RideUpdate{
+	params := datamodels.ChangeRideState{
 		ID:    d.Ride.ID,
 		State: state,
 	}
@@ -186,7 +186,7 @@ func (d *Driver) updateRide(state datamodels.RideState) {
 }
 
 func (d *Driver) computeChangeRideStateResponse(responseCode int, params datamodels.DataParams) {
-	var rideState datamodels.RideUpdate
+	var rideState datamodels.ChangeRideState
 	mapstructure.Decode(params, &rideState)
 
 	if responseCode != 0 {
@@ -201,7 +201,7 @@ func (d *Driver) computeChangeRideStateResponse(responseCode int, params datamod
 // AcceptRide
 /////////////////////////////////
 func (d *Driver) requestRide(params datamodels.DataParams) {
-	var ride datamodels.Ride
+	var ride datamodels.RideData
 	mapstructure.Decode(params, &ride)
 
 	d.mu.Lock()
@@ -240,7 +240,7 @@ func (d *Driver) computeAcceptRideResponse(responseCode int, params datamodels.D
 /////////////////////////////////
 
 func (d *Driver) requestChangeTaximeterStateReponse(newState datamodels.DriverState) {
-	state := datamodels.DriverStateChange{
+	state := datamodels.ChangeTaximeterState{
 		State: newState,
 	}
 	d.mu.Lock()
@@ -250,7 +250,7 @@ func (d *Driver) requestChangeTaximeterStateReponse(newState datamodels.DriverSt
 }
 
 func (d *Driver) computeChangeTaximeterStateReponse(responseCode int, params datamodels.DataParams) {
-	var newState datamodels.DriverStateChange
+	var newState datamodels.ChangeTaximeterState
 	mapstructure.Decode(params, &newState)
 
 	if responseCode != 0 {
@@ -268,7 +268,7 @@ func (d *Driver) computeChangeTaximeterStateReponse(responseCode int, params dat
 /////////////////////////////////
 
 func (d *Driver) computePaymentResponse(responseCode int, params datamodels.DataParams) {
-	var rideState datamodels.PaymentResponse
+	var rideState datamodels.PendingPaymentResponse
 	mapstructure.Decode(params, &rideState)
 
 	if responseCode != 0 {
@@ -285,7 +285,7 @@ func (d *Driver) computePaymentResponse(responseCode int, params datamodels.Data
 /////////////////////////////////
 
 func (d *Driver) createRide() {
-	ride := datamodels.Ride{
+	ride := datamodels.RideData{
 		ExternalID:  xid.New().String(),
 		Origin:      datamodels.Defaut,
 		StartDate:   time.Now().Format(time.RFC3339),
@@ -299,10 +299,15 @@ func (d *Driver) createRide() {
 		// Vehicle:     datamodels.Other,
 	}
 
+	createRide := datamodels.CreateRide{
+		Ride:     ride,
+		Proposal: datamodels.Proposal{},
+	}
+
 	req := datamodels.Request{
 		ID:     d.ID,
 		Method: "CreateRide",
-		Params: ride,
+		Params: createRide,
 	}
 
 	d.write(req, d.ID, "CreateRide")
@@ -380,7 +385,7 @@ func (d *Driver) Life() {
 
 			d.mu.Lock()
 			d.Coord = d.Ride.ToAddress.Coord
-			d.Ride = datamodels.Ride{}
+			d.Ride = datamodels.RideData{}
 			d.mu.Unlock()
 		}
 
