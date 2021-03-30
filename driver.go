@@ -201,13 +201,13 @@ func (d *Driver) computeChangeRideStateResponse(responseCode int, params datamod
 // AcceptRide
 /////////////////////////////////
 func (d *Driver) requestRide(params datamodels.DataParams) {
-	var ride datamodels.RideData
-	mapstructure.Decode(params, &ride)
+	var newRide datamodels.CreateRide
+	mapstructure.Decode(params, &newRide)
 
 	d.mu.Lock()
 	if d.DriverState == datamodels.Free {
 		d.DriverState = datamodels.WaitOK
-		d.writeRequest("AcceptRide", datamodels.AcceptRide{ID: ride.ID})
+		d.writeRequest("AcceptRide", datamodels.AcceptRide{ID: newRide.Ride.ID})
 	}
 	d.mu.Unlock()
 }
@@ -320,6 +320,12 @@ func (d *Driver) login() {
 		State: d.DriverState,
 	}
 	d.writeRequest("Login", login)
+}
+
+func (d *Driver) closeConnection() {
+	ws.WriteFrame(d.conn, ws.NewCloseFrame(ws.NewCloseFrameBody(ws.StatusNormalClosure, "Client close connection")))
+	clog.Trace("Driver", "Close", "%s (%d) is diconnected", d.Name, d.ID)
+	d.conn.Close()
 }
 
 func (d *Driver) computeLoginResponse(responseCode int, params datamodels.DataParams) {

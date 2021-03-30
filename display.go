@@ -22,6 +22,8 @@ func output() {
 		switch ev := termbox.PollEvent(); ev.Type {
 		case termbox.EventKey:
 			if ev.Ch == 'q' {
+				termbox.Close()
+				hub.disconnectAll()
 				os.Exit(0)
 			}
 		}
@@ -35,16 +37,16 @@ func output() {
 
 // DisplayHub : Affiche l'etat du Hub
 func displayHub() {
-	// hub.mu.RLock()
-	// hub.mu.RUnlock()
+	hub.mu.RLock()
+	nbDrivers := len(hub.drivers)
+	hub.mu.RUnlock()
 
-	i := 0
-	var zeDriver *Driver
+	var i int
 	termbox.SetCursor(1, 1)
-	for _, zeDriver = range hub.drivers {
-		// hub.mu.RLock()
-		// zeDriver := drv
-		// hub.mu.RUnlock()
+	for i = 0; i < nbDrivers; i++ {
+		hub.mu.RLock()
+		zeDriver := hub.drivers[i]
+		hub.mu.RUnlock()
 
 		zeDriver.mu.Lock()
 		tbprintf(1, i, termbox.ColorDefault, termbox.ColorDefault, "%s", zeDriver.Name)
@@ -75,7 +77,6 @@ func displayHub() {
 			tbprintf(55, i, termbox.ColorDefault, termbox.ColorDefault, "%s", zeDriver.Ride.ToAddress.Name)
 		}
 		zeDriver.mu.Unlock()
-		i++
 	}
 	t := time.Now()
 	tbprintf(28, i, termbox.ColorDefault, termbox.ColorDefault, "%s", t.Format("15:04:05"))

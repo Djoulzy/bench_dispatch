@@ -57,11 +57,10 @@ func (h *Hub) Register(conn net.Conn, id int, name string) *Driver {
 
 func (h *Hub) remove(driver *Driver) bool {
 	if _, has := h.drivers[driver.ID]; !has {
+		clog.Error("Hub", "remove", "Can't find driver %s (%d)", driver.Name, driver.ID)
 		return false
 	}
-
 	delete(h.drivers, driver.ID)
-
 	return true
 }
 
@@ -70,4 +69,10 @@ func (h *Hub) Remove(driver *Driver) {
 	h.mu.Lock()
 	h.remove(driver)
 	h.mu.Unlock()
+}
+
+func (h *Hub) disconnectAll() {
+	for _, d := range h.drivers {
+		d.closeConnection()
+	}
 }
