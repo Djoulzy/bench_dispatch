@@ -160,12 +160,15 @@ func (d *Driver) write(x interface{}, id int, met string) error {
 /////////////////////////////////
 
 func (d *Driver) sendCoord() {
-	params := datamodels.Coordinates{
-		Latitude:  d.Coord.Latitude,
-		Longitude: d.Coord.Longitude,
+	updateDriverLocation := datamodels.UpdateDriverLocation{
+		Coord: datamodels.Coordinates{
+			Latitude:  d.Coord.Latitude,
+			Longitude: d.Coord.Longitude,
+		},
+		VehicleType: datamodels.Berline,
 	}
-
-	d.writeRequest("UpdateDriverLocation", params)
+	updateDriverLocation.VehicleOptions = append(updateDriverLocation.VehicleOptions, datamodels.CovidShield)
+	d.writeRequest("UpdateDriverLocation", updateDriverLocation)
 }
 
 func dice(nb int) int {

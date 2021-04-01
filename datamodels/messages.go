@@ -52,9 +52,17 @@ type ChangeRideState struct {
 	State RideState `mapstructure:"state" json:"state"`
 }
 
+// UpdateDriverLocation: Mise à jour de la position du chauffeur
+type UpdateDriverLocation struct {
+	Coord          Coordinates     `mapstructure:"coordinates" json:"coordinates"`
+	VehicleOptions []VehicleOption `mapstructure:"vehicleOptions" json:"vehicleOptions"`
+	VehicleType    VehicleType     `mapstructure:"vehicleType" json:"vehicleType"`
+}
+
 // AcceptRide : Message du chauffeur pour accepter la course
 type AcceptRide struct {
-	ID int64 `mapstructure:"rideId" json:"rideId"`
+	ID      int64   `mapstructure:"rideId" json:"rideId"`
+	Vehicle Vehicle `mapstructure:"vehicle" json:"vehicle"`
 }
 
 // ChangeTaximeterState : Changement du status d'un Driver

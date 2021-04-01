@@ -28,14 +28,14 @@ type VehicleOption int
 
 // Vehicule options list
 const (
-	covidShield VehicleOption = iota + 1
-	englishSpoken
-	mkids1
-	mkids2
-	mkids3
-	mkids4
-	pets
-	access
+	CovidShield VehicleOption = iota + 1
+	EnglishSpoken
+	Mkids1
+	Mkids2
+	Mkids3
+	Mkids4
+	Pets
+	Access
 )
 
 // Vehicle : Descriptif du véhicule du Driver
