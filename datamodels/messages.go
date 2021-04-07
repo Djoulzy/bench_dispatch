@@ -22,27 +22,24 @@ type Error struct {
 }
 
 /////////////////////////////////////////
-/////////// INCOMING MESSAGES ///////////
+/////////// OUTGOING MESSAGES ///////////
 /////////////////////////////////////////
 
 // Login : Structure d'info pour le login Driver
 // Response is error code
 type Login struct {
-	Token string      `json:"token"`
-	State DriverState `json:"state"`
-	ID    int         `json:"id"`
-	Name  string      `json:"name"`
-}
-
-// MonitorLogin : Structure d'info pour le login Driver
-type MonitorLogin struct {
-	Browsername string `json:"name"`
+	Token string         `json:"token"`
+	State TaximeterState `json:"state"`
+	ID    int            `json:"id"`
+	Name  string         `json:"name"`
 }
 
 // CreateRide : Proposition de course
 type CreateRide struct {
-	Ride     RideData `mapstructure:"ride" json:"ride"`
-	Proposal Proposal `mapstructure:"proposal" json:"proposal"`
+	Ride          RideData      `mapstructure:"ride" json:"ride"`
+	SearchOptions SearchOptions `mapstructure:"searchOptions" json:"searchOptions"`
+	Passenger     Passenger     `mapstructure:"passenger" json:"passenger"`
+	Proposal      Proposal      `mapstructure:"proposal" json:"proposal"`
 }
 
 // RideUpdate : Modifie l'état de la course
@@ -68,11 +65,11 @@ type AcceptRide struct {
 // ChangeTaximeterState : Changement du status d'un Driver
 // Response is the same with error code
 type ChangeTaximeterState struct {
-	State DriverState `mapstructure:"state" json:"state"`
+	State TaximeterState `mapstructure:"state" json:"state"`
 }
 
 /////////////////////////////////////////
-/////////// OUTGOING MESSAGES ///////////
+/////////// INCOMING MESSAGES ///////////
 /////////////////////////////////////////
 
 // MonitorConfig : Structure d'info pour le login Driver
@@ -82,12 +79,18 @@ type MonitorConfig struct {
 
 // Payment : Payement d'une course
 type PendingPaymentResponse struct {
-	Ride RideData `mapstructure:"ride" json:"ride"`
+	Ride               RideData `mapstructure:"ride" json:"ride"`
+	PickUpAddress      Address  `mapstructure:"pickUpAddress" json:"pickUpAddress"`
+	Payment            Payment  `mapstructure:"payment" json:"payment"`
+	CancellationReason string   `mapstructure:"cancellationReason" json:"cancellationReason"`
 }
 
 // AcceptRideResponse : Retour pour course acceptée
 type AcceptRideResponse struct {
-	Ride RideData `mapstructure:"ride" json:"ride"`
+	Ride          RideData      `mapstructure:"ride" json:"ride"`
+	Passenger     Passenger     `mapstructure:"passenger" json:"passenger"`
+	Vehicle       Vehicle       `mapstructure:"vehicle" json:"vehicle"`
+	SearchOptions SearchOptions `mapstructure:"searchOptions" json:"searchOptions"`
 }
 
 /*

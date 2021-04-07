@@ -40,12 +40,13 @@ const (
 
 // Vehicle : Descriptif du véhicule du Driver
 type Vehicle struct {
-	ID           int    `mapstructure:"id" json:"id"`
-	Brand        string `mapstructure:"brand" json:"brand"`
-	Model        string `mapstructure:"model" json:"model"`
-	Color        string `mapstructure:"color" json:"color"`
-	Plate        string `mapstructure:"plate" json:"plate"`
-	NumberOfSeat int    `mapstructure:"numberOfSeats" json:"numberOfSeats"`
+	ID           int         `mapstructure:"id" json:"id"`
+	VehicleType  VehicleType `mapstructure:"vehicleType" json:"vehicleType"`
+	Brand        string      `mapstructure:"brand" json:"brand"`
+	Model        string      `mapstructure:"model" json:"model"`
+	Color        string      `mapstructure:"color" json:"color"`
+	Plate        string      `mapstructure:"plate" json:"plate"`
+	NumberOfSeat int         `mapstructure:"numberOfSeats" json:"numberOfSeats"`
 }
 
 // RideFlowType : Provenace de la demande
@@ -59,11 +60,21 @@ const (
 
 // Passenger : Détails du passager
 type Passenger struct {
-	ID        int    `mapstructure:"id" json:"id"`
-	Picture   string `mapstructure:"picture" json:"picture"`
-	Phone     string `mapstructure:"phone" json:"phone"`
-	Firstname string `mapstructure:"firstname" json:"firstname"`
-	Lastname  string `mapstructure:"lastname" json:"lastname"`
+	ID          int    `mapstructure:"id" json:"id"`
+	ImageURL    string `mapstructure:"imageURL" json:"imageURL"`
+	Firstname   string `mapstructure:"firstname" json:"firstname"`
+	Lastname    string `mapstructure:"lastname" json:"lastname"`
+	PhoneNumber string `mapstructure:"phoneNumber" json:"phoneNumber"`
+}
+
+// Driver : Détails du conducteur
+type Driver struct {
+	ID          int     `mapstructure:"id" json:"id"`
+	ImageURL    string  `mapstructure:"imageURL" json:"imageURL"`
+	Rating      float32 `mapstructure:"rating" json:"rating"`
+	Firstname   string  `mapstructure:"firstname" json:"firstname"`
+	Lastname    string  `mapstructure:"lastname" json:"lastname"`
+	PhoneNumber string  `mapstructure:"phoneNumber" json:"phoneNumber"`
 }
 
 // Coordinates : geolocalisation
@@ -103,47 +114,54 @@ type RideStats struct {
 	Type             int     `mapstructure:"type" json:"type"`
 }
 
+// Payment : paiement de la course
+type Payment struct {
+	VatValue float32      `mapstructure:"vatValue" json:"vatValue"`
+	Stats    [3]RideStats `mapstructure:"stats" json:"stats"`
+}
+
 type Proposal struct {
 	SaveForMe   bool     `mapstructure:"saveForMe" json:"saveForMe"`
 	ShareGroups []string `mapstructure:"shareGroups" json:"shareGroups"`
 }
 
+// SearchOptions : Paramètre de recherche de drivers pour une course
+type SearchOptions struct {
+	Memo           string
+	Reference      string
+	VehicleOptions []VehicleOption `mapstructure:"vehicleOptions" json:"vehicleOptions"`
+	VehicleType    VehicleType     `mapstructure:"vehicleType" json:"vehicleType"`
+}
+
 // Ride : modele de donnée pour une course
 type RideData struct {
-	ID             int64           `mapstructure:"id" json:"id"`
-	Origin         RideFlowType    `mapstructure:"origin" json:"origin"`
-	ExternalID     string          `mapstructure:"externalId" json:"externalId"`
-	Memo           string          `mapstructure:"memo" json:"memo"`
-	Reference      string          `mapstructure:"reference" json:"reference"`
-	StartDate      string          `mapstructure:"date" json:"startDate"`
-	State          RideState       `mapstructure:"state" json:"state"`
-	ToAddress      Address         `mapstructure:"toAddress" json:"toAddress"`
-	ValidUntil     string          `mapstructure:"validUntil" json:"validUntil"`
-	IsImmediate    bool            `mapstructure:"isImmediate" json:"isImmediate"`
-	FromAddress    Address         `mapstructure:"fromAddress" json:"fromAddress"`
-	NbLuggages     int             `mapstructure:"numberOfLuggages" json:"numberOfLuggages"`
-	NbPassengers   int             `mapstructure:"numberOfPassengers" json:"numberOfPassengers"`
-	VehicleType    VehicleType     `mapstructure:"vehicleType" json:"vehicleType"`
-	Vehicle        Vehicle         `mapstructure:"vehicle" json:"vehicle"`
-	PickUpAddress  Address         `mapstructure:"pickUpAddress" json:"pickUpAddress"`
-	Passenger      Passenger       `mapstructure:"passenger" json:"passenger"`
-	Stats          []RideStats     `mapstructure:"stats" json:"stats"`
-	VatValue       float32         `mapstructure:"vatValue" json:"vatValue"`
-	VehicleOptions []VehicleOption `mapstructure:"vehicleOptions" json:"vehicleOptions"`
+	ID           int64        `mapstructure:"id" json:"id"`
+	Origin       RideFlowType `mapstructure:"origin" json:"origin"`
+	ExternalID   string       `mapstructure:"externalId" json:"externalId"`
+	Memo         string       `mapstructure:"memo" json:"memo"`
+	Reference    string       `mapstructure:"reference" json:"reference"`
+	StartDate    string       `mapstructure:"startDate" json:"startDate"`
+	State        RideState    `mapstructure:"state" json:"state"`
+	ToAddress    Address      `mapstructure:"toAddress" json:"toAddress"`
+	IsImmediate  bool         `mapstructure:"isImmediate" json:"isImmediate"`
+	FromAddress  Address      `mapstructure:"fromAddress" json:"fromAddress"`
+	NbLuggages   int          `mapstructure:"numberOfLuggages" json:"numberOfLuggages"`
+	NbPassengers int          `mapstructure:"numberOfPassengers" json:"numberOfPassengers"`
 }
 
 // DriverState : Etat du chauffeur
-type DriverState int
+type TaximeterState int
 
 // Liste des etats du chauffeur
 const (
-	Free DriverState = iota
+	Free TaximeterState = iota
 	Occupied
 	Offline
+	Ghost
 
 	Moving
 	WaitOK
 	WaitACK
-	Payment
+	Billing
 	Err
 )

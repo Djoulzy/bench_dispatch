@@ -61,7 +61,7 @@ func displayHub() {
 			tbprintf(15, i, termbox.ColorBlack, termbox.ColorGreen, "Approch ")
 		case datamodels.Occupied:
 			tbprintf(15, i, termbox.ColorBlack, termbox.ColorYellow, "Occupied")
-		case datamodels.Payment:
+		case datamodels.Billing:
 			tbprintf(15, i, termbox.ColorYellow, termbox.ColorBlack, "Payement")
 		case datamodels.Err:
 			tbprintf(15, i, termbox.ColorRed, termbox.ColorDefault, "-Error- ")

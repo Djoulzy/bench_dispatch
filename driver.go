@@ -28,7 +28,7 @@ type Driver struct {
 	hub         *Hub
 	ID          int
 	Name        string
-	DriverState datamodels.DriverState
+	DriverState datamodels.TaximeterState
 	Coord       datamodels.Coordinates
 	Ride        datamodels.RideData
 	ToDest      float64
@@ -242,7 +242,7 @@ func (d *Driver) computeAcceptRideResponse(responseCode int, params datamodels.D
 // ChangeTaximeterState
 /////////////////////////////////
 
-func (d *Driver) requestChangeTaximeterStateReponse(newState datamodels.DriverState) {
+func (d *Driver) requestChangeTaximeterStateReponse(newState datamodels.TaximeterState) {
 	state := datamodels.ChangeTaximeterState{
 		State: newState,
 	}
@@ -279,7 +279,7 @@ func (d *Driver) computePaymentResponse(responseCode int, params datamodels.Data
 	}
 	d.mu.Lock()
 	d.Ride.State = rideState.Ride.State
-	d.DriverState = datamodels.Payment
+	d.DriverState = datamodels.Billing
 	d.mu.Unlock()
 }
 
@@ -292,7 +292,6 @@ func (d *Driver) createRide() {
 		ExternalID:  xid.New().String(),
 		Origin:      datamodels.Defaut,
 		StartDate:   time.Now().Format(time.RFC3339),
-		ValidUntil:  time.Now().Format(time.RFC3339),
 		State:       datamodels.Pending,
 		IsImmediate: true,
 		FromAddress: getNewAdress(),
@@ -303,8 +302,10 @@ func (d *Driver) createRide() {
 	}
 
 	createRide := datamodels.CreateRide{
-		Ride:     ride,
-		Proposal: datamodels.Proposal{},
+		Ride:          ride,
+		Passenger:     datamodels.Passenger{},
+		SearchOptions: datamodels.SearchOptions{},
+		Proposal:      datamodels.Proposal{},
 	}
 
 	req := datamodels.Request{
@@ -388,7 +389,7 @@ func (d *Driver) Life() {
 				d.updateRide(datamodels.PendingPayment)
 				d.ToDest = 0
 			}
-		case datamodels.Payment:
+		case datamodels.Billing:
 			d.updateRide(datamodels.Ended)
 			d.requestChangeTaximeterStateReponse(datamodels.Free)
 
