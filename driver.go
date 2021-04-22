@@ -288,10 +288,24 @@ func (d *Driver) computePaymentResponse(responseCode int, params datamodels.Data
 /////////////////////////////////
 
 func (d *Driver) createRide() {
+	var options []datamodels.VehicleOption
+	optionsList := []datamodels.VehicleOption{
+		datamodels.CPAM,
+		datamodels.CovidShield,
+		datamodels.EnglishSpoken,
+		datamodels.Mkids1,
+		datamodels.Mkids2,
+		datamodels.Mkids3,
+		datamodels.Mkids4,
+		datamodels.Pets,
+		datamodels.Access,
+	}
+	nbOptions := rand.Intn(3) + 1
+
 	ride := datamodels.RideData{
 		ExternalID:  xid.New().String(),
 		Origin:      datamodels.Defaut,
-		StartDate:   time.Now().Format(time.RFC3339),
+		StartDate:   datamodels.FormatDateForIOS(time.Now()),
 		State:       datamodels.Pending,
 		IsImmediate: true,
 		FromAddress: getNewAdress(),
@@ -301,11 +315,21 @@ func (d *Driver) createRide() {
 		// Vehicle:     datamodels.Other,
 	}
 
+	for i := 0; i < nbOptions; i++ {
+		choice := rand.Intn(len(optionsList))
+		options = append(options, optionsList[choice])
+	}
+
 	createRide := datamodels.CreateRide{
-		Ride:          ride,
-		Passenger:     datamodels.Passenger{},
-		SearchOptions: datamodels.SearchOptions{},
-		Proposal:      datamodels.Proposal{},
+		Ride:      ride,
+		Passenger: datamodels.Passenger{},
+		SearchOptions: datamodels.SearchOptions{
+			Memo:           "Pas de retard PLEASE!",
+			Reference:      "Pote du Maire",
+			VehicleOptions: options,
+			VehicleType:    datamodels.Berline,
+		},
+		Proposal: datamodels.Proposal{},
 	}
 
 	req := datamodels.Request{

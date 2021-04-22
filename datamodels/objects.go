@@ -24,11 +24,12 @@ const (
 )
 
 // VehicleOption : Options list
-type VehicleOption int
+type VehicleOption uint16
 
 // Vehicule options list
 const (
-	CovidShield VehicleOption = iota + 1
+	CPAM VehicleOption = 2 << iota
+	CovidShield
 	EnglishSpoken
 	Mkids1
 	Mkids2
