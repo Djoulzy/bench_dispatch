@@ -43,7 +43,7 @@ func displayHub() {
 
 	var i int
 	termbox.SetCursor(1, 1)
-	for i = 0; i < nbDrivers; i++ {
+	for i = 1; i <= nbDrivers; i++ {
 		hub.mu.RLock()
 		zeDriver := hub.drivers[i]
 		hub.mu.RUnlock()

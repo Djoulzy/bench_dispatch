@@ -346,6 +346,7 @@ func (d *Driver) login() {
 		ID:    d.ID,
 		Name:  d.Name,
 		State: d.DriverState,
+		Token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjQwMTU2MjMsImlhdCI6MTYyNDAwODQyMywidXNlclV1aWQiOiIxNWIzZDZlNC02NDYzLTEwM2ItOTEzMy01OTA4N2Q3ZjkwZmMiLCJ1c2VySWQiOjMxN30.KC3Pd2zpK-Y64HUOwI0JOx48trxRLBZdy5vuuo2Z7RtVzlRAL2zT8gdlhZpTgfDJ9PUwMz4RG3r9QcL_dmFQRRseWVbWX2_KYdxktYSvtOb-Zr9MsEdJrxZ4_t4p5brldEkRRwGr_wKK8EiqozVPgRo5uBSb4bVf7zrLfgb-anBR7GNcicu1e455f_UBvMbef0Oa5rxR144fPmEuVLzWgTjVsEBI1jUBaHrhjOlOe-VPQ64Gt74Rm5Q0mtxtTqTx2rLEPu_v6DmrEKKkF9i8dUA6gJqmOcLISI6jree7eBmOMRPIQo0soVewCxdW5NADBg-KJwecsHpivzi49FY0Hg",
 	}
 	d.writeRequest("Login", login)
 }
