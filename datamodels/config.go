@@ -16,6 +16,7 @@ type Bench struct {
 	NbDrivers      int
 	BaseTimer      int  // Basde de temps
 	SendPos        int  // Nb de base de temps entre deux envois de position
+	PingDelay      int  // Nb de base de temps entre deux envois de ping
 	IdleDuration   int  // Durée de la pause en BT
 	IdleCreateRide bool // Doit on generer des courses
 	PercentForIdle int  // Pourcentage de chance de passer en Idle

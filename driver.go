@@ -76,6 +76,9 @@ func (d *Driver) HandleProtocol(header ws.Header, payload []byte) error {
 	}
 
 	if header.OpCode.IsControl() {
+		if header.OpCode == ws.OpPong {
+			return nil
+		}
 		if header.OpCode == ws.OpClose {
 			req = &datamodels.Response{ID: d.ID, Method: "close"}
 		}
@@ -361,6 +364,10 @@ func (d *Driver) computeLoginResponse(responseCode int, params datamodels.DataPa
 	d.requestChangeTaximeterStateReponse(datamodels.Free)
 }
 
+func (d *Driver) sendPing() {
+	d.conn.Write(ws.CompiledPing)
+}
+
 // Life : Simulation des actions d'un Driver
 func (d *Driver) Life() {
 	baseTimer, _ := time.ParseDuration(fmt.Sprintf("%ds", conf.Bench.BaseTimer))
@@ -373,6 +380,7 @@ func (d *Driver) Life() {
 
 	idleCount := 0
 	sendPosCount := 0
+	sendPingCount := 0
 
 	for {
 		<-ticker.C
@@ -429,6 +437,12 @@ func (d *Driver) Life() {
 			sendPosCount = conf.Bench.SendPos
 		}
 		sendPosCount--
+
+		if sendPingCount == 0 {
+			d.sendPing()
+			sendPingCount = conf.Bench.PingDelay
+		}
+		sendPingCount--
 
 		// case s := <-d.in:
 		// 	d.mu.Lock()

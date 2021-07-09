@@ -5,11 +5,13 @@ StartLogging    = true
 Workers         = 100
 MaxUsers        = 50
 QueueSize       = 5
+FileLog         = "./app.log"
 
 [Bench]
 NbDrivers       = 20
 BaseTimer       = 2
 SendPos         = 5
+PingDelay       = 15
 IdleDuration    = 10
 IdleCreateRide  = true
 PercentForIdle  = 10
